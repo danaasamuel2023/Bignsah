@@ -1,16 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: true,
-    // Add this to disable static generation for specific routes
-    exportPathMap: async function (
-      defaultPathMap,
-      { dev, dir, outDir, distDir, buildId }
-    ) {
-      // Remove the verify-payment page from static generation
-      const pathMap = { ...defaultPathMap };
-      delete pathMap['/verify-payment'];
-      return pathMap;
-    }
-  };
-  
-  module.exports = nextConfig;
+  reactStrictMode: true,
+  // Set output mode to prevent static optimization issues
+  output: 'server',
+  // Only needed if you're also exporting some pages as static
+  experimental: {
+    appDir: true
+  }
+};
+
+module.exports = nextConfig;
