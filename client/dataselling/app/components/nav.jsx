@@ -118,7 +118,7 @@ export default function Navbar() {
             Deposit
           </Link>
           
-          <Link href="/orders" className="text-white hover:bg-blue-700 block px-3 py-2 rounded-md text-base font-medium">
+          <Link href="/transactions" className="text-white hover:bg-blue-700 block px-3 py-2 rounded-md text-base font-medium">
             Transactions
           </Link>
         </div>
