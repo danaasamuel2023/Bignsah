@@ -44,9 +44,7 @@ export default function Navbar() {
               <Link href="/deposite" className="bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium">
                 Deposit
               </Link>
-              <Link href="/withdraw" className="text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">
-                Withdraw
-              </Link>
+             
               <Link href="/orders" className="text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">
                 Transactions
               </Link>

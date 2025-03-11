@@ -1,5 +1,5 @@
 'use client'
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -13,6 +13,13 @@ export default function AuthForm() {
   const [isSignup, setIsSignup] = useState(false);
   const { register, handleSubmit, reset } = useForm();
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      router.push('/'); // Redirect if user is already logged in
+    }
+  }, []);
+
   const togglePassword = () => setShowPassword(!showPassword);
   const toggleAuthMode = () => {
     setIsSignup(!isSignup);
@@ -24,18 +31,15 @@ export default function AuthForm() {
     setLoading(true);
     setError("");
     try {
-      const endpoint = isSignup ? "/register" : "/login";
+      const endpoint = isSignup ? "register" : "login";
       const response = await axios.post(`http://localhost:5000/api/auth/${endpoint}`, data);
       
       if (!isSignup) {
-        // Store both token and userId in localStorage
+        // Store token and userId in localStorage
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("userId", response.data.userId);
-        window.location.reload(); // Ensure UI updates
-        
-        setTimeout(() => {
-          router.push('/'); // Redirect to home page after login
-        }, 100);
+
+        router.push('/'); // Redirect to home page after login
       } else {
         // Show success message or automatically log in the user after signup
         setError("Account created successfully! You can now login.");
