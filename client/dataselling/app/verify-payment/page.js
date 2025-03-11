@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 
-export default function VerifyDeposit() {
+// Client component that uses useSearchParams
+function VerifyDepositClient() {
   const [status, setStatus] = useState('verifying'); // 'verifying', 'success', 'error'
   const [message, setMessage] = useState('Verifying your payment...');
   const [balance, setBalance] = useState(null);
   const searchParams = useSearchParams();
   const router = useRouter();
   const reference = searchParams?.get('reference');
-
+  
   useEffect(() => {
     const verifyPayment = async () => {
       if (!reference) {
@@ -19,7 +20,7 @@ export default function VerifyDeposit() {
         setMessage('Payment reference not found. Please try again or contact support.');
         return;
       }
-
+      
       try {
         const response = await axios.get(
           `https://bignsah.onrender.com/api/wallet/verify-payment?reference=${reference}`
@@ -42,14 +43,14 @@ export default function VerifyDeposit() {
         console.error('Verification error:', error);
       }
     };
-
+    
     verifyPayment();
   }, [reference]);
-
+  
   const handleDashboardReturn = () => {
     router.push('/'); // Adjust this to your dashboard route
   };
-
+  
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">Payment Verification</h2>
@@ -94,5 +95,27 @@ export default function VerifyDeposit() {
         <p className="text-sm text-gray-500 mt-6">Reference: {reference}</p>
       )}
     </div>
+  );
+}
+
+// Fallback component to show while loading
+function VerifyDepositFallback() {
+  return (
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-4">Payment Verification</h2>
+      <div className="flex flex-col items-center py-4">
+        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent mb-4"></div>
+        <p>Loading payment verification...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main component that wraps the client component with Suspense
+export default function VerifyDeposit() {
+  return (
+    <Suspense fallback={<VerifyDepositFallback />}>
+      <VerifyDepositClient />
+    </Suspense>
   );
 }
