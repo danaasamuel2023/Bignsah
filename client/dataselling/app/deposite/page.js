@@ -46,7 +46,7 @@ export default function Deposit() {
 
         try {
             // Make sure this endpoint matches your backend route configuration
-            const response = await axios.post('http://localhost:5000/api/wallet/add-funds', {
+            const response = await axios.post('https://bignsah.onrender.com/api/wallet/add-funds', {
                 userId,
                 email,
                 amount: parseFloat(amount)

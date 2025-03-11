@@ -22,7 +22,7 @@ export default function VerifyDeposit() {
 
       try {
         const response = await axios.get(
-          `/api/wallet/verify-payment?reference=${reference}`
+          `https://bignsah.onrender.com/api/wallet/verify-payment?reference=${reference}`
         );
         
         if (response.data.success) {

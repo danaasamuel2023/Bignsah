@@ -26,7 +26,7 @@ export default function AuthForm() {
     setError("");
     try {
       const endpoint = isSignup ? "/register" : "/login";
-      const response = await axios.post(`http://localhost:5000/api/auth/${endpoint}`, data);
+      const response = await axios.post(`https://bignsah.onrender.com/api/auth/${endpoint}`, data);
       if (!isSignup) {
         // Store both token and userId in localStorage
         localStorage.setItem("token", response.data.token);
