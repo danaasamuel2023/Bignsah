@@ -4,7 +4,8 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  phoneNumber: { type: String,  },
+  phoneNumber: { type: String, sparse: true,},
+
   walletBalance: { type: Number, default: 0 }, // Wallet balance field
   userCapacity: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },

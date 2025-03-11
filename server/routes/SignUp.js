@@ -41,8 +41,9 @@ router.post('/register', async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      phoneNumber,
+      phoneNumber: phoneNumber || "N/A", // Provide a default value instead of null
     });
+    
     
     await newUser.save();
     

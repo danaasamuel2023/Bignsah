@@ -3,8 +3,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { useSearchParams, useRouter } from 'next/navigation';
-
+import { useRouter } from 'next/navigation';
 
 export default function AuthForm() {
   const router = useRouter();
@@ -26,14 +25,17 @@ export default function AuthForm() {
     setError("");
     try {
       const endpoint = isSignup ? "/register" : "/login";
-      const response = await axios.post(`https://bignsah.onrender.com/api/auth/${endpoint}`, data);
+      const response = await axios.post(`http://localhost:5000/api/auth/${endpoint}`, data);
+      
       if (!isSignup) {
         // Store both token and userId in localStorage
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("userId", response.data.userId);
-        window.location.reload();
-        router.push('/'); // Redirect to dashboard or any other route after login
-        rou
+        window.location.reload(); // Ensure UI updates
+        
+        setTimeout(() => {
+          router.push('/'); // Redirect to home page after login
+        }, 100);
       } else {
         // Show success message or automatically log in the user after signup
         setError("Account created successfully! You can now login.");
@@ -86,6 +88,21 @@ export default function AuthForm() {
               {...register("username", { required: isSignup })}
               className="w-full p-2 border rounded-md"
               placeholder="Choose a username"
+            />
+          </div>
+        )}
+
+        {isSignup && (
+          <div className="space-y-2">
+            <label htmlFor="phone" className="block text-sm font-medium">
+              Phone Number
+            </label>
+            <input
+              id="phone"
+              type="tel"
+              {...register("phone", { required: isSignup })}
+              className="w-full p-2 border rounded-md"
+              placeholder="Enter your phone number"
             />
           </div>
         )}
