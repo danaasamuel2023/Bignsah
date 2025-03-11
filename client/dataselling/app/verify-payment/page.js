@@ -10,7 +10,7 @@ export default function VerifyDeposit() {
   const [balance, setBalance] = useState(null);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const reference = searchParams.get('reference');
+  const reference = searchParams?.get('reference');
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -22,7 +22,7 @@ export default function VerifyDeposit() {
 
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/wallet/verify-payment?reference=${reference}`
+          `/api/wallet/verify-payment?reference=${reference}`
         );
         
         if (response.data.success) {
