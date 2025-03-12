@@ -21,23 +21,23 @@ const MTNBundleCards = () => {
   }, []);
 
   const bundles = [
-    { capacity: '1', mb: '1000', price: '1.00', network: 'mtn' },
+    { capacity: '1', mb: '1000', price: '6.00', network: 'mtn' },
 
-    { capacity: '2', mb: '2000', price: '10.00', network: 'mtn' },
+    { capacity: '2', mb: '2000', price: '11.00', network: 'mtn' },
     { capacity: '3', mb: '3000', price: '16.00', network: 'mtn' },
-    { capacity: '4', mb: '4000', price: '20.00', network: 'mtn' },
-    { capacity: '5', mb: '5000', price: '25.50', network: 'mtn' },
-    { capacity: '6', mb: '6000', price: '29.00', network: 'mtn' },
+    { capacity: '4', mb: '4000', price: '21.00', network: 'mtn' },
+    { capacity: '5', mb: '5000', price: '26.0', network: 'mtn' },
+    { capacity: '6', mb: '6000', price: '30.00', network: 'mtn' },
     { capacity: '8', mb: '8000', price: '40.00', network: 'mtn' },
-    { capacity: '10', mb: '10000', price: '47.50', network: 'mtn' },
+    { capacity: '10', mb: '10000', price: '49.0', network: 'mtn' },
     { capacity: '12', mb: '15000', price: '55.50', network: 'mtn' },
-    { capacity: '15', mb: '15000', price: '79.50', network: 'mtn' },
-    { capacity: '20', mb: '20000', price: '90.00', network: 'mtn' },
-    { capacity: '25', mb: '25000', price: '105.00', network: 'mtn' },
-    { capacity: '30', mb: '30000', price: '128.00', network: 'mtn' },
-    { capacity: '40', mb: '40000', price: '165.00', network: 'mtn' },
-    { capacity: '50', mb: '50000', price: '206.00', network: 'mtn' },
-    { capacity: '100', mb: '100000', price: '406.00', network: 'mtn' }
+    { capacity: '15', mb: '15000', price: '69.0', network: 'mtn' },
+    { capacity: '20', mb: '20000', price: '89.00', network: 'mtn' },
+    { capacity: '25', mb: '25000', price: '112.00', network: 'mtn' },
+    { capacity: '30', mb: '30000', price: '130.00', network: 'mtn' },
+    { capacity: '40', mb: '40000', price: '173.00', network: 'mtn' },
+    { capacity: '50', mb: '50000', price: '210.00', network: 'mtn' },
+    // { capacity: '100', mb: '100000', price: '406.00', network: 'mtn' }
   ];
 
   // MTN Logo SVG

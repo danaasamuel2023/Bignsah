@@ -21,19 +21,24 @@ const AirtelTigoBundleCards = () => {
   }, []);
 
   const bundles = [
-    { capacity: '1', mb: '1000', price: '1', network: 'at' },
-    { capacity: '2', mb: '2048', price: '16.00', network: 'at' },
-    { capacity: '3', mb: '3072', price: '22.00', network: 'at' },
-    { capacity: '5', mb: '5120', price: '35.00', network: 'at' },
-    { capacity: '10', mb: '10240', price: '60.00', network: 'at' },
-    { capacity: '15', mb: '15360', price: '85.00', network: 'at' },
-    { capacity: '20', mb: '20480', price: '100.00', network: 'at' },
-    { capacity: '25', mb: '25600', price: '125.00', network: 'at' },
-    { capacity: '40', mb: '40960', price: '180.00', network: 'at' },
-    { capacity: '50', mb: '51200', price: '220.00', network: 'at' },
-    { capacity: '100', mb: '102400', price: '420.00', network: 'at' }
-  ];
+    { capacity: '1', mb: '1000', price: '5.00', network: 'mtn' },
 
+    { capacity: '2', mb: '2000', price: '10.00', network: 'mtn' },
+    { capacity: '3', mb: '3000', price: '14.00', network: 'mtn' },
+    { capacity: '4', mb: '4000', price: '17.80', network: 'mtn' },
+    { capacity: '5', mb: '5000', price: '23.50', network: 'mtn' },
+    { capacity: '6', mb: '6000', price: '27.00', network: 'mtn' },
+    { capacity: '8', mb: '8000', price: '35.00', network: 'mtn' },
+    { capacity: '10', mb: '10000', price: '47.0', network: 'mtn' },
+    // { capacity: '12', mb: '15000', price: '65.50', network: 'mtn' },
+    { capacity: '15', mb: '15000', price: '65.50', network: 'mtn' },
+    { capacity: '20', mb: '20000', price: '84.00', network: 'mtn' },
+    { capacity: '25', mb: '25000', price: '104.50', network: 'mtn' },
+    { capacity: '30', mb: '30000', price: '124.00', network: 'mtn' },
+    { capacity: '40', mb: '40000', price: '162.00', network: 'mtn' },
+    { capacity: '50', mb: '50000', price: '200.00', network: 'mtn' },
+    // { capacity: '100', mb: '100000', price: '406.00', network: 'mtn' }
+  ];
   // Airtel-Tigo Logo SVG
   const AirtelTigoLogo = () => (
     <svg width="80" height="80" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
