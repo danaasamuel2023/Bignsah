@@ -9,17 +9,13 @@ export default function Deposit() {
     const [amount, setAmount] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+    const [messageType, setMessageType] = useState('');
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userId');
         const storedEmail = localStorage.getItem('email');
-        if (storedUserId) {
-            setUserId(storedUserId);
-        }
-        if (storedEmail) {
-            setEmail(storedEmail);
-        }
+        if (storedUserId) setUserId(storedUserId);
+        if (storedEmail) setEmail(storedEmail);
     }, []);
 
     const handleDeposit = async () => {
@@ -28,12 +24,6 @@ export default function Deposit() {
             setMessageType('error');
             return;
         }
-
-        // if (!email) {
-        //     setMessage('Email not found. Please log in again.');
-        //     setMessageType('error');
-        //     return;
-        // }
 
         if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
             setMessage('Please enter a valid amount.');
@@ -45,7 +35,6 @@ export default function Deposit() {
         setMessage('');
 
         try {
-            // Make sure this endpoint matches your backend route configuration
             const response = await axios.post('https://bignsah.onrender.com/api/wallet/add-funds', {
                 userId,
                 email,
@@ -53,7 +42,6 @@ export default function Deposit() {
             });
             
             if (response.data.success) {
-                // If payment requires redirect to Paystack
                 if (response.data.authorizationUrl) {
                     window.location.href = response.data.authorizationUrl;
                     return;
@@ -61,7 +49,7 @@ export default function Deposit() {
                 
                 setMessage(response.data.message || 'Deposit successful!');
                 setMessageType('success');
-                setAmount(''); // Clear amount after successful deposit
+                setAmount('');
             } else {
                 setMessage(response.data.error || 'Deposit failed. Try again.');
                 setMessageType('error');
@@ -75,27 +63,17 @@ export default function Deposit() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Deposit Money</h2>
-                
-                <div className="mb-4 p-3 bg-gray-100 rounded-md">
-                    <p className="text-sm text-gray-500">User ID</p>
-                    <p className="font-medium text-gray-700">{userId || 'Not found'}</p>
-                </div>
-                
-                <div className="mb-4 p-3 bg-gray-100 rounded-md">
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium text-gray-700">{email || 'Not found'}</p>
-                </div>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-sm">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">Deposit Money</h2>
                 
                 <div className="mb-6">
-                    <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Amount
                     </label>
                     <div className="relative rounded-md shadow-sm">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-gray-500 sm:text-sm">GHS</span>
+                            <span className="text-gray-500 dark:text-gray-400 sm:text-sm">GHS</span>
                         </div>
                         <input
                             type="number"
@@ -103,7 +81,7 @@ export default function Deposit() {
                             placeholder="0.00"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
-                            className="block w-full pl-12 pr-12 py-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            className="block w-full pl-12 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                         />
                     </div>
                 </div>
@@ -113,8 +91,8 @@ export default function Deposit() {
                     disabled={loading}
                     className={`w-full py-3 px-4 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                         loading 
-                            ? 'bg-blue-400 cursor-not-allowed' 
-                            : 'bg-blue-600 hover:bg-blue-700'
+                            ? 'bg-blue-400 dark:bg-blue-500 cursor-not-allowed' 
+                            : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
                     }`}
                 >
                     {loading ? (
@@ -133,8 +111,8 @@ export default function Deposit() {
                 {message && (
                     <div className={`mt-4 p-3 rounded-md ${
                         messageType === 'success' 
-                            ? 'bg-green-50 text-green-800 border border-green-200' 
-                            : 'bg-red-50 text-red-800 border border-red-200'
+                            ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800' 
+                            : 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'
                     }`}>
                         {message}
                     </div>

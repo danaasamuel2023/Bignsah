@@ -18,7 +18,7 @@ const errorLogger = (error, route) => {
 // REGISTER ROUTE
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, phoneNumber } = req.body;
+    const { name, email, password, phoneNumber} = req.body;
     
     // Validate required fields
     if (!name || !email || !password) {
@@ -41,7 +41,7 @@ router.post('/register', async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      phoneNumber: phoneNumber || "N/A", // Provide a default value instead of null
+      phoneNumber: phoneNumber, // Provide a default value instead of null
     });
     
     

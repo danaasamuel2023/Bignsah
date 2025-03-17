@@ -4,7 +4,12 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  phoneNumber: { type: String, sparse: true,},
+  phoneNumber: { 
+    type: String, 
+    // unique: true,  // Only if you need uniqueness
+    sparse: true,  // This will only apply the index to documents that have the field
+    default: undefined  // This ensures the field isn't set if not provided
+  },
 
   walletBalance: { type: Number, default: 0 }, // Wallet balance field
   userCapacity: { type: Number, default: 0 },
