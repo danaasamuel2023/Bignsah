@@ -185,17 +185,17 @@ const ServicesNetwork = () => {
           </p>
           <div className="flex flex-wrap justify-center gap-4 animate-fadeIn">
             <Link 
-              href="/register" 
+              href="/mtn" 
               className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-lg font-semibold transition-colors"
             >
               Start Selling
             </Link>
-            <Link 
+            {/* <Link 
               href="/plans" 
               className="bg-white text-blue-900 hover:bg-gray-100 px-6 py-3 rounded-lg font-semibold transition-colors"
             >
               View Plans
-            </Link>
+            </Link> */}
           </div>
         </div>
       </div>
