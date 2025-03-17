@@ -41,7 +41,7 @@ router.post('/register', async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: 'admin', // Set default role to 'user'
+      role: 'user', // Set default role to 'user'
       ...(phoneNumber ? { phoneNumber } : {}) // Only add phoneNumber if provided
     });
     await newUser.save();

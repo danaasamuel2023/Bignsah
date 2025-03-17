@@ -59,7 +59,7 @@ export default function AfaRegistration() {
 
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/data'}/process-afa-registration`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'https://bignsah.onrender.com/api/data'}/process-afa-registration`,
         {
           userId,
           phoneNumber,
