@@ -202,7 +202,7 @@ const ServicesNetwork = () => {
       
       <div className="container mx-auto p-4 max-w-6xl">
         <div className="text-center my-12">
-          <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">Iget Services</h1>
+          <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">BigNash Services</h1>
           <p className="text-gray-600 dark:text-gray-300">Choose your preferred network provider below</p>
         </div>
         
