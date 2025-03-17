@@ -351,4 +351,102 @@ router.get('/user-orders/:userId', authenticateUser, async (req, res) => {
     });
   }
 });
+
+
+
+// Simplified AFA Registration route
+router.post('/process-afa-registration', authenticateUser, async (req, res) => {
+  try {
+    const { userId, phoneNumber, price, reference } = req.body;
+    
+    // Log the incoming request
+    logHubnetApiInteraction('AFA_REGISTRATION_REQUEST', reference, req.body);
+    
+    // Validate required fields
+    if (!userId || !phoneNumber || !price) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+
+    // Generate reference if not provided
+    const orderReference = reference || `AFA-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Fetch user from database
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Check if user has enough balance
+    if (user.walletBalance < price) {
+      return res.status(400).json({ success: false, error: 'Insufficient wallet balance' });
+    }
+
+    // Generate random capacity value between 10 and 50
+    const randomCapacity = Math.floor(Math.random() * 41) + 10;
+
+    // Deduct price from user wallet
+    user.walletBalance -= price;
+    await user.save();
+
+    // Create a new order using existing DataOrder schema
+    const newOrder = new DataOrder({
+      userId,
+      phoneNumber,
+      network: 'afa-registration', // Special network type for AFA registration
+      dataAmount: randomCapacity, // Random capacity value
+      price,
+      reference: orderReference,
+      status: 'pending',
+      createdAt: new Date()
+    });
+
+    // Save the order
+    const savedOrder = await newOrder.save();
+    logHubnetApiInteraction('AFA_REGISTRATION_CREATED', orderReference, { orderId: savedOrder._id });
+
+    // Immediately mark as completed (no external API call needed)
+    // savedOrder.status = 'completed';
+    // savedOrder.completedAt = new Date();
+    await savedOrder.save();
+
+    return res.json({
+      success: true,
+      message: 'AFA Registration completed successfully',
+      orderId: savedOrder._id,
+      reference: savedOrder.reference,
+      capacity: randomCapacity
+    });
+    
+  } catch (error) {
+    console.error('Error processing AFA registration:', error);
+    
+    logHubnetApiInteraction('AFA_REGISTRATION_ERROR', req.body?.reference || 'unknown', {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // If there was an error and we already deducted the user's balance, try to refund them
+    if (req.body?.userId && req.body?.price) {
+      try {
+        const user = await User.findById(req.body.userId);
+        if (user) {
+          user.walletBalance += req.body.price;
+          await user.save();
+          logHubnetApiInteraction('AFA_REGISTRATION_REFUND', req.body.reference || 'unknown', {
+            userId: req.body.userId,
+            amount: req.body.price
+          });
+        }
+      } catch (refundError) {
+        console.error('Failed to refund user after AFA registration error:', refundError);
+      }
+    }
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to process AFA registration'
+    });
+  }
+});
+
 module.exports = router;

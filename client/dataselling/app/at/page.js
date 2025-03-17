@@ -21,29 +21,27 @@ const AirtelTigoBundleCards = () => {
   }, []);
 
   const bundles = [
-    { capacity: '1', mb: '1000', price: '5.00', network: 'mtn' },
-
-    { capacity: '2', mb: '2000', price: '10.00', network: 'mtn' },
-    { capacity: '3', mb: '3000', price: '14.00', network: 'mtn' },
-    { capacity: '4', mb: '4000', price: '17.80', network: 'mtn' },
-    { capacity: '5', mb: '5000', price: '23.50', network: 'mtn' },
-    { capacity: '6', mb: '6000', price: '27.00', network: 'mtn' },
-    { capacity: '8', mb: '8000', price: '35.00', network: 'mtn' },
-    { capacity: '10', mb: '10000', price: '47.0', network: 'mtn' },
-    // { capacity: '12', mb: '15000', price: '65.50', network: 'mtn' },
-    { capacity: '15', mb: '15000', price: '65.50', network: 'mtn' },
-    { capacity: '20', mb: '20000', price: '84.00', network: 'mtn' },
-    { capacity: '25', mb: '25000', price: '104.50', network: 'mtn' },
-    { capacity: '30', mb: '30000', price: '124.00', network: 'mtn' },
-    { capacity: '40', mb: '40000', price: '162.00', network: 'mtn' },
-    { capacity: '50', mb: '50000', price: '200.00', network: 'mtn' },
-    // { capacity: '100', mb: '100000', price: '406.00', network: 'mtn' }
+    { capacity: '1', mb: '1000', price: '5.00', network: 'airteltigo' },
+    { capacity: '2', mb: '2000', price: '10.00', network: 'airteltigo' },
+    { capacity: '3', mb: '3000', price: '14.00', network: 'airteltigo' },
+    { capacity: '4', mb: '4000', price: '17.80', network: 'airteltigo' },
+    { capacity: '5', mb: '5000', price: '23.50', network: 'airteltigo' },
+    { capacity: '6', mb: '6000', price: '27.00', network: 'airteltigo' },
+    { capacity: '8', mb: '8000', price: '35.00', network: 'airteltigo' },
+    { capacity: '10', mb: '10000', price: '47.0', network: 'airteltigo' },
+    { capacity: '15', mb: '15000', price: '65.50', network: 'airteltigo' },
+    { capacity: '20', mb: '20000', price: '84.00', network: 'airteltigo' },
+    { capacity: '25', mb: '25000', price: '104.50', network: 'airteltigo' },
+    { capacity: '30', mb: '30000', price: '124.00', network: 'airteltigo' },
+    { capacity: '40', mb: '40000', price: '162.00', network: 'airteltigo' },
+    { capacity: '50', mb: '50000', price: '200.00', network: 'airteltigo' },
   ];
-  // Airtel-Tigo Logo SVG
+  
+  // Airtel-Tigo Logo SVG with correct branding colors
   const AirtelTigoLogo = () => (
     <svg width="80" height="80" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="100" cy="100" r="85" fill="#ff0000" stroke="#000" strokeWidth="2"/>
-      <path d="M60 100 Q100 60, 140 100 T60 100" stroke="#ffffff" strokeWidth="12" fill="none" strokeLinecap="round"/>
+      <circle cx="100" cy="100" r="85" fill="#0033A0" stroke="#fff" strokeWidth="2"/>
+      <path d="M60 100 Q100 60, 140 100 T60 100" stroke="#E40000" strokeWidth="12" fill="none" strokeLinecap="round"/>
       <text x="100" y="140" textAnchor="middle" fontFamily="Arial" fontWeight="bold" fontSize="22" fill="white">AirtelTigo</text>
     </svg>
   );
@@ -145,7 +143,7 @@ const AirtelTigoBundleCards = () => {
         {bundles.map((bundle, index) => (
           <div key={index} className="flex flex-col">
             <div 
-              className={`flex flex-col bg-red-600 overflow-hidden shadow-md cursor-pointer transition-transform duration-300 hover:translate-y-[-5px] ${selectedBundleIndex === index ? 'rounded-t-lg' : 'rounded-lg'}`}
+              className={`flex flex-col bg-blue-800 overflow-hidden shadow-md cursor-pointer transition-transform duration-300 hover:translate-y-[-5px] ${selectedBundleIndex === index ? 'rounded-t-lg' : 'rounded-lg'}`}
               onClick={() => handleSelectBundle(index)}
             >
               <div className="flex flex-col items-center justify-center p-5 space-y-3">
@@ -170,11 +168,11 @@ const AirtelTigoBundleCards = () => {
             </div>
             
             {selectedBundleIndex === index && (
-              <div className="bg-red-600 p-4 rounded-b-lg shadow-md">
+              <div className="bg-blue-800 p-4 rounded-b-lg shadow-md">
                 <div className="mb-4">
                   <input
                     type="tel"
-                    className="w-full px-4 py-2 rounded bg-red-300 text-black placeholder-red-700 border border-red-500 focus:outline-none focus:border-red-800"
+                    className="w-full px-4 py-2 rounded bg-blue-100 text-black placeholder-blue-700 border border-blue-500 focus:outline-none focus:border-blue-800"
                     placeholder="Enter recipient number (e.g., 0271234567)"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
@@ -182,7 +180,7 @@ const AirtelTigoBundleCards = () => {
                 </div>
                 <button
                   onClick={() => handlePurchase(bundle)}
-                  className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-red-400 disabled:cursor-not-allowed"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Processing...' : 'Purchase'}
