@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Phone, Wifi, Radio, CreditCard } from 'lucide-react';
+import { Phone, Wifi, Radio, CreditCard, ClipboardList } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -92,14 +92,21 @@ const NetworkProviderCard = ({ provider }) => {
 const ServicesNetwork = () => {
   const [walletBalance, setWalletBalance] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     // Check if user is logged in
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
+    const userRole = localStorage.getItem("userrole");
     
     if (token && userId) {
       setIsLoggedIn(true);
+      // Check if user is an admin
+      if (userRole === "admin") {
+        setIsAdmin(true);
+      }
       // Fetch wallet balance from your API
       fetchWalletBalance(userId, token);
     }
@@ -122,6 +129,10 @@ const ServicesNetwork = () => {
     }
   };
 
+  const handleAdminPanel = () => {
+    router.push('/admin');
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <header className="w-full bg-white dark:bg-gray-800 shadow-sm">
@@ -135,6 +146,15 @@ const ServicesNetwork = () => {
                   <span className="text-blue-600 dark:text-blue-400 font-semibold ml-1">GHS {walletBalance.toFixed(2)}</span>
                 </div>
               </div>
+            )}
+            {isAdmin && (
+              <button 
+                onClick={handleAdminPanel}
+                className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded transition-colors flex items-center"
+              >
+                <ClipboardList size={18} className="mr-2" />
+                Manage Orders
+              </button>
             )}
             {isLoggedIn ? (
               <Link 

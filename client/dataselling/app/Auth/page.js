@@ -38,6 +38,7 @@ export default function AuthForm() {
         // Store token and userId in localStorage
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("userId", response.data.userId);
+        localStorage.setItem("userrole", response.data.role);
 
         router.push('/'); // Redirect to home page after login
       } else {

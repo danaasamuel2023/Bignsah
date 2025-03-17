@@ -5,6 +5,7 @@ const ConnectDB = require('./DatabaseConnection/connection.js');
 const authRoutes = require('./routes/SignUp.js');
 const dataOrderRoutes = require('./routes/placeOrder.js');
 const Depoite = require('./routes/deposite.js');
+const adminOrder = require('./routes/ordermanagement.js')
 dotenv.config();
 
 // Initialize Express app
@@ -21,6 +22,7 @@ ConnectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/data', dataOrderRoutes);
 app.use('/api', Depoite);
+app.use('/api', adminOrder);
 
 // Default Route
 app.get('/', (req, res) => {
