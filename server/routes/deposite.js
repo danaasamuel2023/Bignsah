@@ -1,12 +1,12 @@
 const express = require("express");
 const axios = require("axios");
 const dotenv = require("dotenv");
-const { User, Transaction } = require("../schema/schema"); // Import Mongoose models
+const { User, Transaction } = require("../schema/schema");
 
 dotenv.config();
 const router = express.Router();
 
-const PAYSTACK_SECRET_KEY = 'sk_live_0fba72fb9c4fc71200d2e0cdbb4f2b37c1de396c';
+const PAYSTACK_SECRET_KEY = 'sk_live_a8a04731a710abc8a5603c54e263ab6b178';
 
 if (!PAYSTACK_SECRET_KEY) {
   throw new Error("Paystack secret key is missing in environment variables");
