@@ -6,7 +6,7 @@ const { User, Transaction } = require("../schema/schema");
 dotenv.config();
 const router = express.Router();
 
-const PAYSTACK_SECRET_KEY = 'sk_live_a8a04731a710abc8a5603c54e263ab6b178';
+const PAYSTACK_SECRET_KEY = 'sk_live_3dcaf1a28ed77172796e90843a6b86ff9cef4a6c';
 
 if (!PAYSTACK_SECRET_KEY) {
   throw new Error("Paystack secret key is missing in environment variables");
