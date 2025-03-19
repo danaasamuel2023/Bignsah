@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const dotenv = require('dotenv');
-const { DataOrder, User } = require('../schema/schema'); // Import Mongoose models
+const { DataOrder, User,Transaction } = require('../schema/schema'); // Import Mongoose models
 const fs = require('fs');
 const path = require('path');
 
@@ -299,23 +299,21 @@ router.get('/order-status/:reference', authenticateUser, async (req, res) => {
   }
 });
 // Get all orders for a specific user
+// Update user-orders endpoint to include AFA fields
 router.get('/user-orders/:userId', authenticateUser, async (req, res) => {
   try {
     const { userId } = req.params;
     
-    // Log the request
     logHubnetApiInteraction('USER_ORDERS_REQUEST', 'N/A', { userId });
     
     if (!userId) {
       return res.status(400).json({ success: false, error: 'User ID is required' });
     }
     
-    // Fetch user orders from newest to oldest
     const orders = await DataOrder.find({ userId })
       .sort({ createdAt: -1 })
-      .select('-__v'); // Exclude version field
+      .select('-__v');
     
-    // Log the response summary
     logHubnetApiInteraction('USER_ORDERS_RESPONSE', 'N/A', { 
       userId,
       orderCount: orders.length 
@@ -323,18 +321,32 @@ router.get('/user-orders/:userId', authenticateUser, async (req, res) => {
     
     return res.json({
       success: true,
-      orders: orders.map(order => ({
-        id: order._id,
-        reference: order.reference,
-        status: order.status,
-        phoneNumber: order.phoneNumber,
-        network: order.network,
-        dataAmount: order.dataAmount,
-        price: order.price,
-        createdAt: order.createdAt,
-        completedAt: order.completedAt || null,
-        failureReason: order.failureReason || null
-      }))
+      orders: orders.map(order => {
+        const orderData = {
+          id: order._id,
+          reference: order.reference,
+          status: order.status,
+          phoneNumber: order.phoneNumber,
+          network: order.network,
+          dataAmount: order.dataAmount,
+          price: order.price,
+          createdAt: order.createdAt,
+          completedAt: order.completedAt || null,
+          failureReason: order.failureReason || null
+        };
+        
+        // Add AFA-specific fields if this is an AFA registration
+        if (order.network === 'afa-registration') {
+          orderData.fullName = order.fullName;
+          orderData.idType = order.idType;
+          orderData.idNumber = order.idNumber;
+          orderData.dateOfBirth = order.dateOfBirth;
+          orderData.occupation = order.occupation;
+          orderData.location = order.location;
+        }
+        
+        return orderData;
+      })
     });
   } catch (error) {
     console.error('Error fetching user orders:', error);
@@ -355,15 +367,27 @@ router.get('/user-orders/:userId', authenticateUser, async (req, res) => {
 
 
 // Simplified AFA Registration route
+// Enhanced AFA Registration route
 router.post('/process-afa-registration', authenticateUser, async (req, res) => {
   try {
-    const { userId, phoneNumber, price, reference } = req.body;
+    const { 
+      userId, 
+      phoneNumber, 
+      price, 
+      reference,
+      fullName,
+      idType,
+      idNumber,
+      dateOfBirth,
+      occupation,
+      location
+    } = req.body;
     
     // Log the incoming request
     logHubnetApiInteraction('AFA_REGISTRATION_REQUEST', reference, req.body);
     
     // Validate required fields
-    if (!userId || !phoneNumber || !price) {
+    if (!userId || !phoneNumber || !price || !fullName || !idType || !idNumber || !dateOfBirth || !occupation || !location) {
       return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
 
@@ -388,26 +412,54 @@ router.post('/process-afa-registration', authenticateUser, async (req, res) => {
     user.walletBalance -= price;
     await user.save();
 
-    // Create a new order using existing DataOrder schema
+    // Create a new order using updated DataOrder schema with AFA fields
     const newOrder = new DataOrder({
       userId,
       phoneNumber,
-      network: 'afa-registration', // Special network type for AFA registration
-      dataAmount: randomCapacity, // Random capacity value
+      network: 'afa-registration',
+      dataAmount: randomCapacity,
       price,
       reference: orderReference,
       status: 'pending',
-      createdAt: new Date()
+      createdAt: new Date(),
+      // Add AFA specific fields
+      fullName,
+      idType,
+      idNumber,
+      dateOfBirth: new Date(dateOfBirth),
+      occupation,
+      location
     });
 
     // Save the order
     const savedOrder = await newOrder.save();
     logHubnetApiInteraction('AFA_REGISTRATION_CREATED', orderReference, { orderId: savedOrder._id });
 
-    // Immediately mark as completed (no external API call needed)
-    // savedOrder.status = 'completed';
-    // savedOrder.completedAt = new Date();
+    // Update order status to completed
+    savedOrder.status = 'completed';
+    savedOrder.completedAt = new Date();
     await savedOrder.save();
+    
+    // Create a transaction record
+    const transaction = new Transaction({
+      userId,
+      type: 'purchase',
+      amount: price,
+      description: 'AFA Registration',
+      reference: orderReference,
+      status: 'completed',
+      balanceAfter: user.walletBalance,
+      metadata: {
+        orderType: 'afa-registration',
+        capacity: randomCapacity,
+        fullName
+      }
+    });
+    
+    await transaction.save();
+    logHubnetApiInteraction('AFA_REGISTRATION_TRANSACTION', orderReference, { 
+      transactionId: transaction._id 
+    });
 
     return res.json({
       success: true,

@@ -28,7 +28,16 @@ const DataOrderSchema = new mongoose.Schema({
   phoneNumber: { type: String, required: true },
   reference: { type: String, required: true, unique: true },
   status: { type: String, enum: ['pending','processing','completed', 'failed'], default: 'pending' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  // AFA Registration specific fields
+  fullName: { type: String },
+  idType: { type: String },
+  idNumber: { type: String },
+  dateOfBirth: { type: Date },
+  occupation: { type: String },
+  location: { type: String },
+  completedAt: { type: Date },
+  failureReason: { type: String }
 });
 
 

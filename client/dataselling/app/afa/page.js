@@ -10,14 +10,22 @@ export default function AfaRegistration() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [darkMode, setDarkMode] = useState(false);
   const [token, setToken] = useState('');
   const [userId, setUserId] = useState('');
   const [userRole, setUserRole] = useState('');
   
+  // Form fields
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [idType, setIdType] = useState('Ghana Card');
+  const [idNumber, setIdNumber] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [location, setLocation] = useState('');
+  
   // Fixed price for AFA registration
-  const fixedPrice = 0.5;
+  const fixedPrice = 0.1;
 
   useEffect(() => {
     // Check if dark mode is enabled in system
@@ -35,7 +43,7 @@ export default function AfaRegistration() {
     const storedUserRole = localStorage.getItem('userrole');
 
     if (!storedToken || !storedUserId) {
-      router.push('/login'); // Redirect to login if not authenticated
+      router.push('/Auth'); // Redirect to login if not authenticated
     } else {
       setToken(storedToken);
       setUserId(storedUserId);
@@ -51,8 +59,9 @@ export default function AfaRegistration() {
     setSuccess('');
     setIsLoading(true);
 
-    if (!phoneNumber) {
-      setError('Please enter a phone number');
+    // Validate all required fields
+    if (!phoneNumber || !fullName || !idType || !idNumber || !dateOfBirth || !occupation || !location) {
+      setError('Please fill in all required fields');
       setIsLoading(false);
       return;
     }
@@ -63,6 +72,12 @@ export default function AfaRegistration() {
         {
           userId,
           phoneNumber,
+          fullName,
+          idType,
+          idNumber,
+          dateOfBirth,
+          occupation,
+          location,
           price: fixedPrice,
           reference: `AFA-${Date.now()}-${Math.floor(Math.random() * 1000)}`
         },
@@ -75,7 +90,13 @@ export default function AfaRegistration() {
 
       if (response.data.success) {
         setSuccess('AFA Registration completed successfully!');
+        // Reset form fields
         setPhoneNumber('');
+        setFullName('');
+        setIdNumber('');
+        setDateOfBirth('');
+        setOccupation('');
+        setLocation('');
         // Redirect to orders page after 2 seconds
         setTimeout(() => {
           router.push('/dashboard');
@@ -91,6 +112,16 @@ export default function AfaRegistration() {
     }
   };
 
+  const inputClassName = `w-full px-3 py-2 border rounded-md ${
+    darkMode 
+      ? 'bg-gray-700 border-gray-600 text-white' 
+      : 'bg-gray-50 border-gray-300 text-gray-900'
+  }`;
+
+  const labelClassName = `block text-sm font-medium mb-2 ${
+    darkMode ? 'text-gray-300' : 'text-gray-700'
+  }`;
+
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
       <Head>
@@ -100,7 +131,7 @@ export default function AfaRegistration() {
       </Head>
 
       <div className="container mx-auto px-4 py-10">
-        <div className={`max-w-md mx-auto ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-6`}>
+        <div className={`max-w-lg mx-auto ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg p-6`}>
           <h1 className={`text-2xl font-bold mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
             AFA Registration
           </h1>
@@ -119,10 +150,22 @@ export default function AfaRegistration() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label 
-                htmlFor="phoneNumber" 
-                className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
-              >
+              <label htmlFor="fullName" className={labelClassName}>
+                Full Name *
+              </label>
+              <input
+                type="text"
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className={inputClassName}
+                placeholder="Enter your full name"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="phoneNumber" className={labelClassName}>
                 Phone Number *
               </label>
               <input
@@ -130,28 +173,96 @@ export default function AfaRegistration() {
                 id="phoneNumber"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-gray-50 border-gray-300 text-gray-900'
-                }`}
+                className={inputClassName}
                 placeholder="Enter phone number"
                 required
               />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="mb-4">
+                <label htmlFor="idType" className={labelClassName}>
+                  ID Type *
+                </label>
+                <select
+                  id="idType"
+                  value={idType}
+                  onChange={(e) => setIdType(e.target.value)}
+                  className={inputClassName}
+                  required
+                >
+                  <option value="Ghana Card">Ghana Card</option>
+                  <option value="Passport">Passport</option>
+                  <option value="Voter ID">Voter ID</option>
+                  <option value="Driver License">Driver License</option>
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="idNumber" className={labelClassName}>
+                  ID Number *
+                </label>
+                <input
+                  type="text"
+                  id="idNumber"
+                  value={idNumber}
+                  onChange={(e) => setIdNumber(e.target.value)}
+                  className={inputClassName}
+                  placeholder="Enter ID number"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="dateOfBirth" className={labelClassName}>
+                Date of Birth *
+              </label>
+              <input
+                type="date"
+                id="dateOfBirth"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                className={inputClassName}
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="occupation" className={labelClassName}>
+                Occupation *
+              </label>
+              <input
+                type="text"
+                id="occupation"
+                value={occupation}
+                onChange={(e) => setOccupation(e.target.value)}
+                className={inputClassName}
+                placeholder="Enter your occupation"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="location" className={labelClassName}>
+                Location *
+              </label>
+              <input
+                type="text"
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className={inputClassName}
+                placeholder="Enter your location"
+                required
+              />
+            </div>
+
             <div className="mb-6">
-              <label 
-                htmlFor="price" 
-                className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
-              >
+              <label htmlFor="price" className={labelClassName}>
                 Price
               </label>
-              <div className={`w-full px-3 py-2 border rounded-md ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white' 
-                  : 'bg-gray-50 border-gray-300 text-gray-900'
-              }`}>
+              <div className={inputClassName}>
                 GHC {fixedPrice.toFixed(2)}
               </div>
               <p className={`mt-1 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>

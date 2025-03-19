@@ -10,6 +10,7 @@ export default function OrdersList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [updateStates, setUpdateStates] = useState({});
+  const [expandedOrder, setExpandedOrder] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -137,6 +138,7 @@ export default function OrdersList() {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
@@ -145,7 +147,16 @@ export default function OrdersList() {
   const formatNetwork = (network) => {
     if (network === 'mtn') return 'MTN';
     if (network === 'at') return 'Airtel-Tigo';
+    if (network === 'afa-registration') return 'AFA Registration';
     return network.charAt(0).toUpperCase() + network.slice(1);
+  };
+
+  const toggleOrderDetails = (orderId) => {
+    if (expandedOrder === orderId) {
+      setExpandedOrder(null);
+    } else {
+      setExpandedOrder(orderId);
+    }
   };
 
   if (loading) return (
@@ -222,67 +233,122 @@ export default function OrdersList() {
                   </tr>
                 ) : (
                   orders.map((order) => (
-                    <tr key={order._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {order._id.substring(0, 8)}...
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {order.userId ? (
-                          <div>
-                            <div>{order.userId.name}</div>
-                            <div className="text-xs text-gray-400">{order.userId.email}</div>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">Unknown user</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatNetwork(order.network)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {order.phoneNumber}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {order.dataAmount} MB
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        GH₵ {order.price.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(order.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                          <select
-                            value={updateStates[order._id]?.status || order.status}
-                            onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                            className="border rounded px-2 py-1 text-sm"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="processing">Processing</option>
-                            <option value="completed">Completed</option>
-                            <option value="failed">Failed</option>
-                          </select>
-                          <button
-                            onClick={() => updateOrderStatus(order._id)}
-                            disabled={updateStates[order._id]?.loading || updateStates[order._id]?.status === order.status}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm disabled:opacity-50"
-                          >
-                            {updateStates[order._id]?.loading ? 'Updating...' : 'Update'}
-                          </button>
-                          {updateStates[order._id]?.message && (
-                            <span className={`text-xs ${updateStates[order._id]?.message.includes('Error') ? 'text-red-500' : 'text-green-500'}`}>
-                              {updateStates[order._id]?.message}
-                            </span>
+                    <>
+                      <tr key={order._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {order._id.substring(0, 8)}...
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {order.userId ? (
+                            <div>
+                              <div>{order.userId.name}</div>
+                              <div className="text-xs text-gray-400">{order.userId.email}</div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">Unknown user</span>
                           )}
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatNetwork(order.network)}
+                          {order.network === 'afa-registration' && (
+                            <button 
+                              onClick={() => toggleOrderDetails(order._id)} 
+                              className="ml-2 text-blue-500 hover:text-blue-700 underline text-xs"
+                            >
+                              {expandedOrder === order._id ? 'Hide Details' : 'View Details'}
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {order.phoneNumber}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {order.network === 'afa-registration' ? 'N/A' : `${order.dataAmount} MB`}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          GH₵ {order.price.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(order.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <select
+                              value={updateStates[order._id]?.status || order.status}
+                              onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                              className="border rounded px-2 py-1 text-sm"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="processing">Processing</option>
+                              <option value="completed">Completed</option>
+                              <option value="failed">Failed</option>
+                            </select>
+                            <button
+                              onClick={() => updateOrderStatus(order._id)}
+                              disabled={updateStates[order._id]?.loading || updateStates[order._id]?.status === order.status}
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm disabled:opacity-50"
+                            >
+                              {updateStates[order._id]?.loading ? 'Updating...' : 'Update'}
+                            </button>
+                            {updateStates[order._id]?.message && (
+                              <span className={`text-xs ${updateStates[order._id]?.message.includes('Error') ? 'text-red-500' : 'text-green-500'}`}>
+                                {updateStates[order._id]?.message}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {/* Expanded AFA Registration Details */}
+                      {order.network === 'afa-registration' && expandedOrder === order._id && (
+                        <tr>
+                          <td colSpan="9" className="px-6 py-4 bg-gray-50">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium text-gray-500">Full Name</p>
+                                <p className="text-sm">{order.fullName || 'N/A'}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium text-gray-500">ID Type</p>
+                                <p className="text-sm">{order.idType || 'N/A'}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium text-gray-500">ID Number</p>
+                                <p className="text-sm">{order.idNumber || 'N/A'}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium text-gray-500">Date of Birth</p>
+                                <p className="text-sm">{formatDate(order.dateOfBirth)}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium text-gray-500">Occupation</p>
+                                <p className="text-sm">{order.occupation || 'N/A'}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium text-gray-500">Location</p>
+                                <p className="text-sm">{order.location || 'N/A'}</p>
+                              </div>
+                              {order.status === 'completed' && (
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-gray-500">Completed At</p>
+                                  <p className="text-sm">{formatDate(order.completedAt)}</p>
+                                </div>
+                              )}
+                              {order.status === 'failed' && (
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-gray-500">Failure Reason</p>
+                                  <p className="text-sm text-red-500">{order.failureReason || 'No reason provided'}</p>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))
                 )}
               </tbody>
