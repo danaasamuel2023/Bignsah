@@ -25,7 +25,7 @@ export default function AfaRegistration() {
   const [location, setLocation] = useState('');
   
   // Fixed price for AFA registration
-  const fixedPrice = 0.1;
+  const fixedPrice = 8;
 
   useEffect(() => {
     // Check if dark mode is enabled in system
