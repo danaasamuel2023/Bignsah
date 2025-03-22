@@ -11,8 +11,18 @@ export default function OrdersList() {
   const [error, setError] = useState(null);
   const [updateStates, setUpdateStates] = useState({});
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
+    // Check if user prefers dark mode or has set it manually
+    if (typeof window !== 'undefined') {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      // Check localStorage (if user manually set preference)
+      const storedTheme = localStorage.getItem('theme');
+      setDarkMode(storedTheme === 'dark' || (storedTheme !== 'light' && prefersDark));
+    }
+    
     fetchOrders();
   }, []);
 
@@ -129,11 +139,11 @@ export default function OrdersList() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return darkMode ? 'bg-yellow-800 text-yellow-100' : 'bg-yellow-100 text-yellow-800';
+      case 'processing': return darkMode ? 'bg-blue-800 text-blue-100' : 'bg-blue-100 text-blue-800';
+      case 'completed': return darkMode ? 'bg-green-800 text-green-100' : 'bg-green-100 text-green-800';
+      case 'failed': return darkMode ? 'bg-red-800 text-red-100' : 'bg-red-100 text-red-800';
+      default: return darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -159,116 +169,153 @@ export default function OrdersList() {
     }
   };
 
+  // Toggle dark mode function
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+  };
+
+  // Apply appropriate text colors based on dark mode
+  const getTextColor = (type) => {
+    switch(type) {
+      case 'heading': return darkMode ? 'text-white' : 'text-gray-900';
+      case 'subheading': return darkMode ? 'text-gray-300' : 'text-gray-500';
+      case 'body': return darkMode ? 'text-gray-200' : 'text-gray-500';
+      case 'link': return darkMode ? 'text-blue-300 hover:text-blue-200' : 'text-blue-500 hover:text-blue-700';
+      default: return darkMode ? 'text-white' : 'text-gray-900';
+    }
+  };
+
+  // Get background colors based on dark mode
+  const getBgColor = (type) => {
+    switch(type) {
+      case 'main': return darkMode ? 'bg-gray-900' : 'bg-white';
+      case 'header': return darkMode ? 'bg-gray-800' : 'bg-gray-50';
+      case 'card': return darkMode ? 'bg-gray-800' : 'bg-white';
+      case 'expanded': return darkMode ? 'bg-gray-700' : 'bg-gray-50';
+      default: return darkMode ? 'bg-gray-800' : 'bg-white';
+    }
+  };
+
   if (loading) return (
-    <div className="flex justify-center items-center min-h-screen">
+    <div className={`flex justify-center items-center min-h-screen ${getBgColor('main')}`}>
       <div className="spinner border-t-4 border-blue-500 border-solid rounded-full w-12 h-12 animate-spin"></div>
     </div>
   );
 
   if (error) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <div className="bg-red-100 text-red-700 p-4 rounded-lg">
+    <div className={`flex justify-center items-center min-h-screen ${getBgColor('main')}`}>
+      <div className={`${darkMode ? 'bg-red-900 text-red-100' : 'bg-red-100 text-red-700'} p-4 rounded-lg`}>
         Error: {error}
       </div>
     </div>
   );
 
   return (
-    <>
+    <div className={`${getBgColor('main')} min-h-screen transition-colors duration-300`}>
       <Head>
         <title>Orders Management</title>
       </Head>
       
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Orders Management</h1>
-          <button 
-            onClick={fetchOrders}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
-          >
-            Refresh
-          </button>
+          <h1 className={`text-2xl font-bold ${getTextColor('heading')}`}>Orders Management</h1>
+          <div className="flex space-x-4">
+            <button 
+              onClick={toggleDarkMode}
+              className={`px-4 py-2 ${darkMode ? 'bg-yellow-500 hover:bg-yellow-400' : 'bg-gray-700 hover:bg-gray-600'} text-white rounded`}
+            >
+              {darkMode ? 'Light Mode' : 'Dark Mode'}
+            </button>
+            <button 
+              onClick={fetchOrders}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
         
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className={`${getBgColor('card')} shadow-md rounded-lg overflow-hidden`}>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className={`${getBgColor('header')}`}>
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${getTextColor('subheading')} uppercase tracking-wider`}>
                     Order ID
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${getTextColor('subheading')} uppercase tracking-wider`}>
                     User
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${getTextColor('subheading')} uppercase tracking-wider`}>
                     Network
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${getTextColor('subheading')} uppercase tracking-wider`}>
                     Phone Number
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${getTextColor('subheading')} uppercase tracking-wider`}>
                     Data Amount
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${getTextColor('subheading')} uppercase tracking-wider`}>
                     Price
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${getTextColor('subheading')} uppercase tracking-wider`}>
                     Date
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${getTextColor('subheading')} uppercase tracking-wider`}>
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${getTextColor('subheading')} uppercase tracking-wider`}>
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className={`${getBgColor('card')} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan="9" className={`px-6 py-4 text-center ${getTextColor('body')}`}>
                       No orders found
                     </td>
                   </tr>
                 ) : (
                   orders.map((order) => (
                     <>
-                      <tr key={order._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <tr key={order._id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getTextColor('heading')}`}>
                           {order._id.substring(0, 8)}...
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
                           {order.userId ? (
                             <div>
-                              <div>{order.userId.name}</div>
-                              <div className="text-xs text-gray-400">{order.userId.email}</div>
+                              <div className={getTextColor('heading')}>{order.userId.name}</div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-400'}`}>{order.userId.email}</div>
                             </div>
                           ) : (
-                            <span className="text-gray-400">Unknown user</span>
+                            <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>Unknown user</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
                           {formatNetwork(order.network)}
                           {order.network === 'afa-registration' && (
                             <button 
                               onClick={() => toggleOrderDetails(order._id)} 
-                              className="ml-2 text-blue-500 hover:text-blue-700 underline text-xs"
+                              className={`ml-2 ${getTextColor('link')} underline text-xs`}
                             >
                               {expandedOrder === order._id ? 'Hide Details' : 'View Details'}
                             </button>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
                           {order.phoneNumber}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
                           {order.network === 'afa-registration' ? 'N/A' : `${order.dataAmount} MB`}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
                           GH₵ {order.price.toFixed(2)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
                           {formatDate(order.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -276,12 +323,12 @@ export default function OrdersList() {
                             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                             <select
                               value={updateStates[order._id]?.status || order.status}
                               onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                              className="border rounded px-2 py-1 text-sm"
+                              className={`border rounded px-2 py-1 text-sm ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
                             >
                               <option value="pending">Pending</option>
                               <option value="processing">Processing</option>
@@ -306,41 +353,41 @@ export default function OrdersList() {
                       {/* Expanded AFA Registration Details */}
                       {order.network === 'afa-registration' && expandedOrder === order._id && (
                         <tr>
-                          <td colSpan="9" className="px-6 py-4 bg-gray-50">
+                          <td colSpan="9" className={`px-6 py-4 ${getBgColor('expanded')}`}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Full Name</p>
-                                <p className="text-sm">{order.fullName || 'N/A'}</p>
+                                <p className={`text-sm font-medium ${getTextColor('subheading')}`}>Full Name</p>
+                                <p className={`text-sm ${getTextColor('heading')}`}>{order.fullName || 'N/A'}</p>
                               </div>
                               <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">ID Type</p>
-                                <p className="text-sm">{order.idType || 'N/A'}</p>
+                                <p className={`text-sm font-medium ${getTextColor('subheading')}`}>ID Type</p>
+                                <p className={`text-sm ${getTextColor('heading')}`}>{order.idType || 'N/A'}</p>
                               </div>
                               <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">ID Number</p>
-                                <p className="text-sm">{order.idNumber || 'N/A'}</p>
+                                <p className={`text-sm font-medium ${getTextColor('subheading')}`}>ID Number</p>
+                                <p className={`text-sm ${getTextColor('heading')}`}>{order.idNumber || 'N/A'}</p>
                               </div>
                               <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Date of Birth</p>
-                                <p className="text-sm">{formatDate(order.dateOfBirth)}</p>
+                                <p className={`text-sm font-medium ${getTextColor('subheading')}`}>Date of Birth</p>
+                                <p className={`text-sm ${getTextColor('heading')}`}>{formatDate(order.dateOfBirth)}</p>
                               </div>
                               <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Occupation</p>
-                                <p className="text-sm">{order.occupation || 'N/A'}</p>
+                                <p className={`text-sm font-medium ${getTextColor('subheading')}`}>Occupation</p>
+                                <p className={`text-sm ${getTextColor('heading')}`}>{order.occupation || 'N/A'}</p>
                               </div>
                               <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Location</p>
-                                <p className="text-sm">{order.location || 'N/A'}</p>
+                                <p className={`text-sm font-medium ${getTextColor('subheading')}`}>Location</p>
+                                <p className={`text-sm ${getTextColor('heading')}`}>{order.location || 'N/A'}</p>
                               </div>
                               {order.status === 'completed' && (
                                 <div className="space-y-1">
-                                  <p className="text-sm font-medium text-gray-500">Completed At</p>
-                                  <p className="text-sm">{formatDate(order.completedAt)}</p>
+                                  <p className={`text-sm font-medium ${getTextColor('subheading')}`}>Completed At</p>
+                                  <p className={`text-sm ${getTextColor('heading')}`}>{formatDate(order.completedAt)}</p>
                                 </div>
                               )}
                               {order.status === 'failed' && (
                                 <div className="space-y-1">
-                                  <p className="text-sm font-medium text-gray-500">Failure Reason</p>
+                                  <p className={`text-sm font-medium ${getTextColor('subheading')}`}>Failure Reason</p>
                                   <p className="text-sm text-red-500">{order.failureReason || 'No reason provided'}</p>
                                 </div>
                               )}
@@ -356,6 +403,6 @@ export default function OrdersList() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
