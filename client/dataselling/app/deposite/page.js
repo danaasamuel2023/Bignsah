@@ -24,21 +24,29 @@ export default function Deposit() {
             setMessageType('error');
             return;
         }
-
-        if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+    
+        const amountValue = parseFloat(amount);
+        if (!amount || isNaN(amountValue) || amountValue <= 0) {
             setMessage('Please enter a valid amount.');
             setMessageType('error');
             return;
         }
-
+    
+        // Add minimum deposit validation
+        if (amountValue < 10) {
+            setMessage('Minimum deposit amount is 10 GHS.');
+            setMessageType('error');
+            return;
+        }
+    
         setLoading(true);
         setMessage('');
-
+    
         try {
             const response = await axios.post('https://bignsah.onrender.com/api/wallet/add-funds', {
                 userId,
                 email,
-                amount: parseFloat(amount)
+                amount: amountValue
             });
             
             if (response.data.success) {

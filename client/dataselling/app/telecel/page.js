@@ -53,23 +53,41 @@ const TelecelBundleCards = () => {
   };
 
   const validatePhoneNumber = (number) => {
-    // Basic Telecel Ghana number validation (starts with 027 or 057)
-    const pattern = /^(027|057)\d{7}$/;
-    return pattern.test(number);
+    // Trim the number first to remove any whitespace
+    const trimmedNumber = number.trim();
+    
+    // Specific AT (Telecel) Ghana number validation (starts with 027 or 057)
+    // Check both the format and the prefix for AT numbers
+    const telecelPattern = /^(027|057)\d{7}$/;
+    
+    return telecelPattern.test(trimmedNumber);
+  };
+
+  // Handle phone number input change with automatic trimming
+  const handlePhoneNumberChange = (e) => {
+    // Automatically trim the input value as it's entered
+    setPhoneNumber(e.target.value.trim());
   };
 
   const handlePurchase = async (bundle) => {
     // Reset message state
     setMessage({ text: '', type: '' });
     
+    // The phone number is already trimmed in the input handler,
+    // but we'll trim again just to be safe
+    const trimmedPhoneNumber = phoneNumber.trim();
+    
     // Validate phone number
-    if (!phoneNumber) {
+    if (!trimmedPhoneNumber) {
       setMessage({ text: 'Please enter a phone number', type: 'error' });
       return;
     }
     
-    if (!validatePhoneNumber(phoneNumber)) {
-      setMessage({ text: 'Please enter a valid Telecel phone number', type: 'error' });
+    if (!validatePhoneNumber(trimmedPhoneNumber)) {
+      setMessage({ 
+        text: 'Please enter a valid AT (Telecel) phone number (must start with 027 or 057 followed by 7 digits)', 
+        type: 'error' 
+      });
       return;
     }
 
@@ -95,7 +113,7 @@ const TelecelBundleCards = () => {
       // Directly process the order with all required data
       const processResponse = await axios.post('https://bignsah.onrender.com/api/data/process-data-order', {
         userId: userId,
-        phoneNumber: phoneNumber,
+        phoneNumber: trimmedPhoneNumber,
         network: bundle.network,
         dataAmount: dataAmountInGB,
         price: parseFloat(bundle.price),
@@ -108,7 +126,7 @@ const TelecelBundleCards = () => {
 
       if (processResponse.data.success) {
         setMessage({ 
-          text: `${bundle.capacity}GB data bundle purchased successfully for ${phoneNumber}`, 
+          text: `${bundle.capacity}GB data bundle purchased successfully for ${trimmedPhoneNumber}`, 
           type: 'success' 
         });
         setSelectedBundleIndex(null);
@@ -174,9 +192,9 @@ const TelecelBundleCards = () => {
                   <input
                     type="tel"
                     className="w-full px-4 py-2 rounded bg-red-200 text-black placeholder-red-700 border border-red-500 focus:outline-none focus:border-red-800"
-                    placeholder="Enter recipient number (e.g., 0271234567)"
+                    placeholder="Enter AT number (027XXXXXXX or 057XXXXXXX)"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={handlePhoneNumberChange}
                   />
                 </div>
                 <button

@@ -53,22 +53,27 @@ const AirtelTigoBundleCards = () => {
   };
 
   const validatePhoneNumber = (number) => {
+    // Trim the number first to remove any whitespace
+    const trimmedNumber = number.trim();
     // Basic Airtel-Tigo Ghana number validation (starts with 026, 027, 056, or 057)
     const pattern = /^(026|027|056|057)\d{7}$/;
-    return pattern.test(number);
+    return pattern.test(trimmedNumber);
   };
 
   const handlePurchase = async (bundle) => {
     // Reset message state
     setMessage({ text: '', type: '' });
     
+    // Trim the phone number
+    const trimmedPhoneNumber = phoneNumber.trim();
+    
     // Validate phone number
-    if (!phoneNumber) {
+    if (!trimmedPhoneNumber) {
       setMessage({ text: 'Please enter a phone number', type: 'error' });
       return;
     }
     
-    if (!validatePhoneNumber(phoneNumber)) {
+    if (!validatePhoneNumber(trimmedPhoneNumber)) {
       setMessage({ text: 'Please enter a valid Airtel-Tigo phone number', type: 'error' });
       return;
     }
@@ -94,7 +99,7 @@ const AirtelTigoBundleCards = () => {
       // Directly process the order with all required data
       const processResponse = await axios.post('https://bignsah.onrender.com/api/data/process-data-order', {
         userId: userId,
-        phoneNumber: phoneNumber,
+        phoneNumber: trimmedPhoneNumber,
         network: bundle.network,
         dataAmount: dataAmountInGB,
         price: parseFloat(bundle.price),
@@ -107,7 +112,7 @@ const AirtelTigoBundleCards = () => {
 
       if (processResponse.data.success) {
         setMessage({ 
-          text: `${bundle.capacity}GB data bundle purchased successfully for ${phoneNumber}`, 
+          text: `${bundle.capacity}GB data bundle purchased successfully for ${trimmedPhoneNumber}`, 
           type: 'success' 
         });
         setSelectedBundleIndex(null);

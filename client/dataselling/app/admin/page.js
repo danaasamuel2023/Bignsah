@@ -181,7 +181,7 @@ export default function OrdersList() {
     switch(type) {
       case 'heading': return darkMode ? 'text-white' : 'text-gray-900';
       case 'subheading': return darkMode ? 'text-gray-300' : 'text-gray-500';
-      case 'body': return darkMode ? 'text-gray-200' : 'text-gray-500';
+      case 'body': return darkMode ? 'text-gray-100' : 'text-gray-500'; // Lighter for better visibility in dark mode
       case 'link': return darkMode ? 'text-blue-300 hover:text-blue-200' : 'text-blue-500 hover:text-blue-700';
       default: return darkMode ? 'text-white' : 'text-gray-900';
     }
@@ -289,10 +289,10 @@ export default function OrdersList() {
                           {order.userId ? (
                             <div>
                               <div className={getTextColor('heading')}>{order.userId.name}</div>
-                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-400'}`}>{order.userId.email}</div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-400'}`}>{order.userId.email}</div>
                             </div>
                           ) : (
-                            <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>Unknown user</span>
+                            <span className={darkMode ? 'text-gray-300' : 'text-gray-400'}>Unknown user</span>
                           )}
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
@@ -328,7 +328,7 @@ export default function OrdersList() {
                             <select
                               value={updateStates[order._id]?.status || order.status}
                               onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                              className={`border rounded px-2 py-1 text-sm ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}
+                              className={`border rounded px-2 py-1 text-sm ${darkMode ? 'bg-gray-700 text-white border-gray-500' : 'bg-white text-gray-900 border-gray-300'}`}
                             >
                               <option value="pending">Pending</option>
                               <option value="processing">Processing</option>
@@ -343,7 +343,7 @@ export default function OrdersList() {
                               {updateStates[order._id]?.loading ? 'Updating...' : 'Update'}
                             </button>
                             {updateStates[order._id]?.message && (
-                              <span className={`text-xs ${updateStates[order._id]?.message.includes('Error') ? 'text-red-500' : 'text-green-500'}`}>
+                              <span className={`text-xs font-medium ${updateStates[order._id]?.message.includes('Error') ? 'text-red-400' : 'text-green-400'}`}>
                                 {updateStates[order._id]?.message}
                               </span>
                             )}
@@ -388,7 +388,7 @@ export default function OrdersList() {
                               {order.status === 'failed' && (
                                 <div className="space-y-1">
                                   <p className={`text-sm font-medium ${getTextColor('subheading')}`}>Failure Reason</p>
-                                  <p className="text-sm text-red-500">{order.failureReason || 'No reason provided'}</p>
+                                  <p className="text-sm text-red-400">{order.failureReason || 'No reason provided'}</p>
                                 </div>
                               )}
                             </div>

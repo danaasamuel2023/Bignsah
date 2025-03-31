@@ -22,7 +22,6 @@ const MTNBundleCards = () => {
 
   const bundles = [
     { capacity: '1', mb: '1000', price: '6.00', network: 'mtn' },
-
     { capacity: '2', mb: '2000', price: '11.00', network: 'mtn' },
     { capacity: '3', mb: '3000', price: '16.00', network: 'mtn' },
     { capacity: '4', mb: '4000', price: '21.00', network: 'mtn' },
@@ -56,23 +55,38 @@ const MTNBundleCards = () => {
   };
 
   const validatePhoneNumber = (number) => {
+    // Trim the number first to remove any whitespace
+    const trimmedNumber = number.trim();
     // Basic MTN Ghana number validation (starts with 024, 054, 055, or 059)
     const pattern = /^(024|054|055|059)\d{7}$/;
-    return pattern.test(number);
+    return pattern.test(trimmedNumber);
+  };
+
+  // Handle phone number input change with automatic trimming
+  const handlePhoneNumberChange = (e) => {
+    // Automatically trim the input value as it's entered
+    setPhoneNumber(e.target.value.trim());
   };
 
   const handlePurchase = async (bundle) => {
     // Reset message state
     setMessage({ text: '', type: '' });
     
+    // The phone number is already trimmed in the input handler,
+    // but we'll trim again just to be safe
+    const trimmedPhoneNumber = phoneNumber.trim();
+    
     // Validate phone number
-    if (!phoneNumber) {
+    if (!trimmedPhoneNumber) {
       setMessage({ text: 'Please enter a phone number', type: 'error' });
       return;
     }
     
-    if (!validatePhoneNumber(phoneNumber)) {
-      setMessage({ text: 'Please enter a valid MTN phone number', type: 'error' });
+    if (!validatePhoneNumber(trimmedPhoneNumber)) {
+      setMessage({ 
+        text: 'Please enter a valid MTN phone number (must start with 024, 054, 055, or 059 followed by 7 digits)', 
+        type: 'error' 
+      });
       return;
     }
 
@@ -98,7 +112,7 @@ const MTNBundleCards = () => {
       // Directly process the order with all required data
       const processResponse = await axios.post('https://bignsah.onrender.com/api/data/process-data-order', {
         userId: userId,
-        phoneNumber: phoneNumber,
+        phoneNumber: trimmedPhoneNumber,
         network: bundle.network,
         dataAmount: dataAmountInGB,
         price: parseFloat(bundle.price),
@@ -111,7 +125,7 @@ const MTNBundleCards = () => {
 
       if (processResponse.data.success) {
         setMessage({ 
-          text: `${bundle.capacity}GB data bundle purchased successfully for ${phoneNumber}`, 
+          text: `${bundle.capacity}GB data bundle purchased successfully for ${trimmedPhoneNumber}`, 
           type: 'success' 
         });
         setSelectedBundleIndex(null);
@@ -177,9 +191,9 @@ const MTNBundleCards = () => {
                   <input
                     type="tel"
                     className="w-full px-4 py-2 rounded bg-yellow-300 text-black placeholder-yellow-700 border border-yellow-500 focus:outline-none focus:border-yellow-600"
-                    placeholder="Enter recipient number (e.g., 0241234567)"
+                    placeholder="Enter MTN number (024XXXXXXX, 054XXXXXXX, etc.)"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={handlePhoneNumberChange}
                   />
                 </div>
                 <button
