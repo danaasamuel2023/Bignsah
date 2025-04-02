@@ -56,9 +56,9 @@ const TelecelBundleCards = () => {
     // Trim the number first to remove any whitespace
     const trimmedNumber = number.trim();
     
-    // Specific AT (Telecel) Ghana number validation (starts with 027 or 057)
-    // Check both the format and the prefix for AT numbers
-    const telecelPattern = /^(027|057)\d{7}$/;
+    // Specific Telecel Ghana number validation (starts with 020 or 050)
+    // Check both the format and the prefix for Telecel numbers
+    const telecelPattern = /^(020|050)\d{7}$/;
     
     return telecelPattern.test(trimmedNumber);
   };
@@ -85,7 +85,7 @@ const TelecelBundleCards = () => {
     
     if (!validatePhoneNumber(trimmedPhoneNumber)) {
       setMessage({ 
-        text: 'Please enter a valid AT (Telecel) phone number (must start with 027 or 057 followed by 7 digits)', 
+        text: 'Please enter a valid Telecel phone number (must start with 020 or 050 followed by 7 digits)', 
         type: 'error' 
       });
       return;
@@ -192,7 +192,7 @@ const TelecelBundleCards = () => {
                   <input
                     type="tel"
                     className="w-full px-4 py-2 rounded bg-red-200 text-black placeholder-red-700 border border-red-500 focus:outline-none focus:border-red-800"
-                    placeholder="Enter AT number (027XXXXXXX or 057XXXXXXX)"
+                    placeholder="Enter Telecel number (020XXXXXXX or 050XXXXXXX)"
                     value={phoneNumber}
                     onChange={handlePhoneNumberChange}
                   />
