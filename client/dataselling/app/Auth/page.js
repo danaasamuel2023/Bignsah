@@ -57,7 +57,7 @@ export default function AuthForm() {
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-700">
       <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">
-        {isSignup ? "Create an Account" : "Login to Bignasg Datahub"}
+        {isSignup ? "Create an Account" : "Login to Bignash Datahub"}
       </h2>
       
       {error && 
