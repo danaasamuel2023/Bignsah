@@ -192,9 +192,9 @@ export default function AfaRegistration() {
                   required
                 >
                   <option value="Ghana Card">Ghana Card</option>
-                  <option value="Passport">Passport</option>
+                  {/* <option value="Passport">Passport</option> */}
                   <option value="Voter ID">Voter ID</option>
-                  <option value="Driver License">Driver License</option>
+                  {/* <option value="Driver License">Driver License</option> */}
                 </select>
               </div>
 

@@ -137,13 +137,14 @@ export default function OrdersList() {
     }
   };
 
+  // Enhanced getStatusColor function with better contrast for status badges
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return darkMode ? 'bg-yellow-800 text-yellow-100' : 'bg-yellow-100 text-yellow-800';
-      case 'processing': return darkMode ? 'bg-blue-800 text-blue-100' : 'bg-blue-100 text-blue-800';
-      case 'completed': return darkMode ? 'bg-green-800 text-green-100' : 'bg-green-100 text-green-800';
-      case 'failed': return darkMode ? 'bg-red-800 text-red-100' : 'bg-red-100 text-red-800';
-      default: return darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800';
+      case 'pending': return darkMode ? 'bg-yellow-700 text-yellow-50' : 'bg-yellow-100 text-yellow-800';
+      case 'processing': return darkMode ? 'bg-blue-700 text-blue-50' : 'bg-blue-100 text-blue-800';
+      case 'completed': return darkMode ? 'bg-green-700 text-green-50' : 'bg-green-100 text-green-800';
+      case 'failed': return darkMode ? 'bg-red-700 text-red-50' : 'bg-red-100 text-red-800';
+      default: return darkMode ? 'bg-gray-700 text-gray-50' : 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -176,13 +177,15 @@ export default function OrdersList() {
     localStorage.setItem('theme', newMode ? 'dark' : 'light');
   };
 
-  // Apply appropriate text colors based on dark mode
+  // Updated getTextColor function for better contrast in dark mode
   const getTextColor = (type) => {
     switch(type) {
       case 'heading': return darkMode ? 'text-white' : 'text-gray-900';
-      case 'subheading': return darkMode ? 'text-gray-300' : 'text-gray-500';
-      case 'body': return darkMode ? 'text-gray-100' : 'text-gray-500'; // Lighter for better visibility in dark mode
-      case 'link': return darkMode ? 'text-blue-300 hover:text-blue-200' : 'text-blue-500 hover:text-blue-700';
+      case 'subheading': return darkMode ? 'text-gray-200' : 'text-gray-500'; // Lightened from 300 to 200
+      case 'body': return darkMode ? 'text-gray-100' : 'text-gray-600'; // Lightened and increased contrast
+      case 'link': return darkMode ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-700';
+      case 'error': return darkMode ? 'text-red-300' : 'text-red-600'; // Added for error messages
+      case 'success': return darkMode ? 'text-green-300' : 'text-green-600'; // Added for success messages
       default: return darkMode ? 'text-white' : 'text-gray-900';
     }
   };
@@ -224,13 +227,13 @@ export default function OrdersList() {
           <div className="flex space-x-4">
             <button 
               onClick={toggleDarkMode}
-              className={`px-4 py-2 ${darkMode ? 'bg-yellow-500 hover:bg-yellow-400' : 'bg-gray-700 hover:bg-gray-600'} text-white rounded`}
+              className={`px-4 py-2 ${darkMode ? 'bg-yellow-500 hover:bg-yellow-400' : 'bg-gray-700 hover:bg-gray-600'} text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-2 ${darkMode ? 'focus:ring-yellow-400' : 'focus:ring-gray-500'}`}
             >
               {darkMode ? 'Light Mode' : 'Dark Mode'}
             </button>
             <button 
               onClick={fetchOrders}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Refresh
             </button>
@@ -289,10 +292,10 @@ export default function OrdersList() {
                           {order.userId ? (
                             <div>
                               <div className={getTextColor('heading')}>{order.userId.name}</div>
-                              <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-400'}`}>{order.userId.email}</div>
+                              <div className={`text-xs ${getTextColor('subheading')}`}>{order.userId.email}</div>
                             </div>
                           ) : (
-                            <span className={darkMode ? 'text-gray-300' : 'text-gray-400'}>Unknown user</span>
+                            <span className={getTextColor('subheading')}>Unknown user</span>
                           )}
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
@@ -300,7 +303,7 @@ export default function OrdersList() {
                           {order.network === 'afa-registration' && (
                             <button 
                               onClick={() => toggleOrderDetails(order._id)} 
-                              className={`ml-2 ${getTextColor('link')} underline text-xs`}
+                              className={`ml-2 ${getTextColor('link')} underline text-xs focus:outline-none focus:ring-1 focus:ring-offset-1 ${darkMode ? 'focus:ring-blue-300' : 'focus:ring-blue-500'}`}
                             >
                               {expandedOrder === order._id ? 'Hide Details' : 'View Details'}
                             </button>
@@ -328,7 +331,7 @@ export default function OrdersList() {
                             <select
                               value={updateStates[order._id]?.status || order.status}
                               onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                              className={`border rounded px-2 py-1 text-sm ${darkMode ? 'bg-gray-700 text-white border-gray-500' : 'bg-white text-gray-900 border-gray-300'}`}
+                              className={`border rounded px-2 py-1 text-sm ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'} focus:outline-none focus:ring-2 ${darkMode ? 'focus:ring-blue-400' : 'focus:ring-blue-500'}`}
                             >
                               <option value="pending">Pending</option>
                               <option value="processing">Processing</option>
@@ -338,12 +341,15 @@ export default function OrdersList() {
                             <button
                               onClick={() => updateOrderStatus(order._id)}
                               disabled={updateStates[order._id]?.loading || updateStates[order._id]?.status === order.status}
-                              className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm disabled:opacity-50"
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
                             >
                               {updateStates[order._id]?.loading ? 'Updating...' : 'Update'}
                             </button>
                             {updateStates[order._id]?.message && (
-                              <span className={`text-xs font-medium ${updateStates[order._id]?.message.includes('Error') ? 'text-red-400' : 'text-green-400'}`}>
+                              <span className={`text-xs font-medium ${updateStates[order._id]?.message.includes('Error') 
+                                ? getTextColor('error') 
+                                : getTextColor('success')}`}
+                              >
                                 {updateStates[order._id]?.message}
                               </span>
                             )}
@@ -388,7 +394,7 @@ export default function OrdersList() {
                               {order.status === 'failed' && (
                                 <div className="space-y-1">
                                   <p className={`text-sm font-medium ${getTextColor('subheading')}`}>Failure Reason</p>
-                                  <p className="text-sm text-red-400">{order.failureReason || 'No reason provided'}</p>
+                                  <p className={`text-sm ${getTextColor('error')}`}>{order.failureReason || 'No reason provided'}</p>
                                 </div>
                               )}
                             </div>

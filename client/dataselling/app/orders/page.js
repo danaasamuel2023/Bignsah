@@ -7,8 +7,18 @@ const UserOrdersHistory = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
+    // Check if user prefers dark mode or has set it manually
+    if (typeof window !== 'undefined') {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      // Check localStorage (if user manually set preference)
+      const storedTheme = localStorage.getItem('theme');
+      setDarkMode(storedTheme === 'dark' || (storedTheme !== 'light' && prefersDark));
+    }
+
     // Get user ID from localStorage
     const storedUserId = localStorage.getItem('userId');
     if (storedUserId) {
@@ -57,15 +67,15 @@ const UserOrdersHistory = () => {
   const getStatusBadgeColor = (status) => {
     switch (status.toLowerCase()) {
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return darkMode ? 'bg-green-700 text-green-50' : 'bg-green-100 text-green-800';
       case 'failed':
-        return 'bg-red-100 text-red-800';
+        return darkMode ? 'bg-red-700 text-red-50' : 'bg-red-100 text-red-800';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return darkMode ? 'bg-yellow-700 text-yellow-50' : 'bg-yellow-100 text-yellow-800';
       case 'processing':
-        return 'bg-blue-100 text-blue-800';
+        return darkMode ? 'bg-blue-700 text-blue-50' : 'bg-blue-100 text-blue-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return darkMode ? 'bg-gray-700 text-gray-50' : 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -92,64 +102,105 @@ const UserOrdersHistory = () => {
     }
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">My Data Bundle Orders</h1>
-      
-      {error && (
-        <div className="mb-4 p-4 rounded bg-red-100 text-red-800">
-          {error}
-        </div>
-      )}
+  // Get text color based on type and dark mode
+  const getTextColor = (type) => {
+    switch(type) {
+      case 'heading': return darkMode ? 'text-white' : 'text-gray-900';
+      case 'subheading': return darkMode ? 'text-gray-200' : 'text-gray-500';
+      case 'body': return darkMode ? 'text-gray-100' : 'text-gray-600';
+      case 'subtle': return darkMode ? 'text-gray-400' : 'text-gray-500';
+      default: return darkMode ? 'text-white' : 'text-gray-900';
+    }
+  };
 
-      {isLoading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+  // Get background color based on type and dark mode
+  const getBgColor = (type) => {
+    switch(type) {
+      case 'main': return darkMode ? 'bg-gray-900' : 'bg-white';
+      case 'card': return darkMode ? 'bg-gray-800' : 'bg-white';
+      case 'header': return darkMode ? 'bg-gray-800' : 'bg-gray-100';
+      case 'hover': return darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50';
+      case 'empty': return darkMode ? 'bg-gray-800' : 'bg-gray-100';
+      case 'error': return darkMode ? 'bg-red-900 text-red-100' : 'bg-red-100 text-red-800';
+      default: return darkMode ? 'bg-gray-800' : 'bg-white';
+    }
+  };
+
+  // Toggle dark mode function
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+  };
+  
+  return (
+    <div className={`${getBgColor('main')} min-h-screen transition-colors duration-300`}>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className={`text-3xl font-bold ${getTextColor('heading')}`}>My Data Bundle Orders</h1>
+          <button 
+            onClick={toggleDarkMode}
+            className={`px-4 py-2 ${darkMode ? 'bg-yellow-500 hover:bg-yellow-400' : 'bg-gray-700 hover:bg-gray-600'} text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-2 ${darkMode ? 'focus:ring-yellow-400' : 'focus:ring-gray-500'}`}
+          >
+            {darkMode ? 'Light Mode' : 'Dark Mode'}
+          </button>
         </div>
-      ) : (
-        <>
-          {orders.length === 0 ? (
-            <div className="text-center p-8 bg-gray-100 rounded-lg">
-              <p className="text-gray-600">You haven't placed any orders yet.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-lg overflow-hidden shadow-md">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="py-3 px-4 text-left">Network</th>
-                    <th className="py-3 px-4 text-left">Phone Number</th>
-                    <th className="py-3 px-4 text-left">Data</th>
-                    <th className="py-3 px-4 text-left">Price</th>
-                    <th className="py-3 px-4 text-left">Date</th>
-                    <th className="py-3 px-4 text-left">Status</th>
-                    <th className="py-3 px-4 text-left">Reference</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <NetworkLogo network={order.network} />
-                      </td>
-                      <td className="py-3 px-4">{order.phoneNumber}</td>
-                      <td className="py-3 px-4">{order.dataAmount} GB</td>
-                      <td className="py-3 px-4">GH₵ {order.price.toFixed(2)}</td>
-                      <td className="py-3 px-4">{formatDate(order.createdAt)}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(order.status)}`}>
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-xs text-gray-500">{order.reference}</td>
+        
+        {error && (
+          <div className={`mb-4 p-4 rounded ${getBgColor('error')}`}>
+            {error}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <>
+            {orders.length === 0 ? (
+              <div className={`text-center p-8 ${getBgColor('empty')} rounded-lg`}>
+                <p className={getTextColor('body')}>You haven't placed any orders yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className={`min-w-full ${getBgColor('card')} rounded-lg overflow-hidden shadow-md`}>
+                  <thead className={getBgColor('header')}>
+                    <tr>
+                      <th className={`py-3 px-4 text-left ${getTextColor('subheading')}`}>Network</th>
+                      <th className={`py-3 px-4 text-left ${getTextColor('subheading')}`}>Phone Number</th>
+                      <th className={`py-3 px-4 text-left ${getTextColor('subheading')}`}>Data</th>
+                      <th className={`py-3 px-4 text-left ${getTextColor('subheading')}`}>Price</th>
+                      <th className={`py-3 px-4 text-left ${getTextColor('subheading')}`}>Date</th>
+                      <th className={`py-3 px-4 text-left ${getTextColor('subheading')}`}>Status</th>
+                      <th className={`py-3 px-4 text-left ${getTextColor('subheading')}`}>Reference</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
+                  </thead>
+                  <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                    {orders.map((order) => (
+                      <tr key={order.id} className={getBgColor('hover')}>
+                        <td className="py-3 px-4">
+                          <NetworkLogo network={order.network} />
+                        </td>
+                        <td className={`py-3 px-4 ${getTextColor('body')}`}>{order.phoneNumber}</td>
+                        <td className={`py-3 px-4 ${getTextColor('body')}`}>{order.dataAmount} GB</td>
+                        <td className={`py-3 px-4 ${getTextColor('body')}`}>GH₵ {order.price.toFixed(2)}</td>
+                        <td className={`py-3 px-4 ${getTextColor('body')}`}>{formatDate(order.createdAt)}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(order.status)}`}>
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className={`py-3 px-4 text-xs ${getTextColor('subtle')}`}>{order.reference}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
