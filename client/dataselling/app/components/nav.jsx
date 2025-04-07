@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, X, Home, CreditCard, List, User, LogOut } from 'lucide-react';
+import { Menu, X, Home, CreditCard, List, User, LogOut, Users } from 'lucide-react';
 
 export default function Navbar() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
+  const [userRole, setUserRole] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
   const [showLogoutMessage, setShowLogoutMessage] = useState(false);
@@ -18,10 +19,12 @@ export default function Navbar() {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('token');
     const storedUsername = localStorage.getItem('username');
+    const storedUserRole = localStorage.getItem('userrole');
     
     if (userId) {
       setIsLoggedIn(true);
       setUsername(storedUsername || 'User');
+      setUserRole(storedUserRole || '');
       
       // Fetch wallet balance if logged in
       if (token) {
@@ -62,6 +65,7 @@ export default function Navbar() {
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     localStorage.removeItem('token');
+    localStorage.removeItem('userrole');
     
     // Update state
     setIsLoggedIn(false);
@@ -76,6 +80,8 @@ export default function Navbar() {
       router.push('/Auth');
     }, 1500);
   };
+
+  const isAdmin = userRole === 'adm';
 
   return (
     <>
@@ -116,6 +122,12 @@ export default function Navbar() {
                   <List size={18} className="mr-1" />
                   Transactions
                 </Link>
+                {isAdmin && (
+                  <Link href="/users" className="text-white hover:bg-blue-500 hover:bg-opacity-50 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 flex items-center">
+                    <Users size={18} className="mr-1" />
+                    Users
+                  </Link>
+                )}
               </div>
             </div>
             
@@ -130,6 +142,9 @@ export default function Navbar() {
                   <div className="text-sm text-white flex items-center">
                     <User size={16} className="mr-1" />
                     <span className="font-medium">{username}</span>
+                    {isAdmin && (
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-red-500 rounded-full">Admin</span>
+                    )}
                   </div>
                   <button
                     onClick={handleLogout}
@@ -199,7 +214,12 @@ export default function Navbar() {
                   <User size={18} className="text-white" />
                 </div>
                 <div>
-                  <div className="text-white font-medium">{username}</div>
+                  <div className="text-white font-medium">
+                    {username}
+                    {isAdmin && (
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-red-500 rounded-full">Admin</span>
+                    )}
+                  </div>
                   <div className="bg-blue-900 mt-1 px-2 py-1 rounded border border-blue-400">
                     <span className="text-xs text-gray-200 font-semibold">Balance:</span>
                     <span className="text-yellow-300 font-bold ml-1">GHS {walletBalance.toFixed(2)}</span>
@@ -234,6 +254,16 @@ export default function Navbar() {
               <List size={18} className="mr-3" />
               Transactions
             </Link>
+            {isAdmin && (
+              <Link 
+                href="/users" 
+                className="flex items-center text-white hover:bg-blue-700 block px-3 py-3 rounded-md text-base font-medium transition-all duration-200"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Users size={18} className="mr-3" />
+                Users
+              </Link>
+            )}
           </div>
           
           <div className="p-4 pt-6 border-t border-blue-700 absolute bottom-0 w-full">
