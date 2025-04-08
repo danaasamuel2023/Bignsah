@@ -181,46 +181,49 @@ export default function CreditUserPage() {
       </Head>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Improved Header with larger text */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
             <button 
               onClick={() => router.back()} 
               className="mr-4 p-2 hover:bg-gray-100 rounded-full"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-6 w-6" />
             </button>
-            <h1 className="text-2xl font-bold flex items-center">
-              <CreditCard className="mr-2 h-6 w-6" />
+            <h1 className="text-3xl font-bold flex items-center text-black">
+              <CreditCard className="mr-3 h-8 w-8" />
               Credit User Wallets
             </h1>
           </div>
         </div>
 
+        {/* Improved Success Message with stronger contrast */}
         {successMessage && (
-          <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+          <div className="bg-green-100 border-l-4 border-green-600 p-5 mb-6">
             <div className="flex items-center">
-              <UserCheck className="h-5 w-5 text-green-500 mr-2" />
-              <p className="text-green-700">{successMessage}</p>
+              <UserCheck className="h-6 w-6 text-green-600 mr-3" />
+              <p className="text-green-800 font-medium text-lg">{successMessage}</p>
             </div>
           </div>
         )}
 
+        {/* Improved Error Message with stronger contrast */}
         {errorMessage && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+          <div className="bg-red-100 border-l-4 border-red-600 p-5 mb-6">
             <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              <p className="text-red-700">{errorMessage}</p>
+              <AlertCircle className="h-6 w-6 text-red-600 mr-3" />
+              <p className="text-red-800 font-medium text-lg">{errorMessage}</p>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Credit Form */}
-          <div className="bg-white p-6 rounded-lg shadow lg:col-span-1">
-            <h2 className="text-lg font-semibold mb-4">Credit Information</h2>
+          {/* Credit Form with improved readability */}
+          <div className="bg-white p-6 rounded-lg shadow-md lg:col-span-1 border border-gray-300">
+            <h2 className="text-xl font-semibold mb-5 text-black">Credit Information</h2>
             
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="mb-5">
+              <label className="block text-base font-medium text-gray-800 mb-2">
                 Amount (GHS)
               </label>
               <input
@@ -230,12 +233,12 @@ export default function CreditUserPage() {
                 placeholder="Enter amount"
                 min="0"
                 step="0.01"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-400 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
               />
             </div>
             
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-base font-medium text-gray-800 mb-2">
                 Description (Optional)
               </label>
               <textarea
@@ -243,7 +246,7 @@ export default function CreditUserPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter description"
                 rows="3"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-400 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
               />
             </div>
             
@@ -251,13 +254,13 @@ export default function CreditUserPage() {
               <button
                 onClick={creditMultipleUsers}
                 disabled={isCreditLoading || selectedUsers.length === 0}
-                className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                   (isCreditLoading || selectedUsers.length === 0) ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
                 {isCreditLoading ? (
                   <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -265,7 +268,7 @@ export default function CreditUserPage() {
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <PlusCircle className="mr-2 h-4 w-4" />
+                    <PlusCircle className="mr-2 h-5 w-5" />
                     Credit Selected Users ({selectedUsers.length})
                   </span>
                 )}
@@ -273,10 +276,10 @@ export default function CreditUserPage() {
             </div>
           </div>
           
-          {/* User Selection */}
-          <div className="bg-white p-6 rounded-lg shadow lg:col-span-2">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Select Users</h2>
+          {/* User Selection with improved contrast and font sizes */}
+          <div className="bg-white p-6 rounded-lg shadow-md lg:col-span-2 border border-gray-300">
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-xl font-semibold text-black">Select Users</h2>
               
               <form onSubmit={handleSearch} className="flex">
                 <input
@@ -284,31 +287,31 @@ export default function CreditUserPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search users..."
-                  className="p-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="p-2 border border-gray-400 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
                 />
                 <button
                   type="submit"
-                  className="bg-gray-100 p-2 border border-l-0 border-gray-300 rounded-r-md hover:bg-gray-200"
+                  className="bg-gray-200 p-2 border border-l-0 border-gray-400 rounded-r-md hover:bg-gray-300"
                 >
-                  <Search className="h-5 w-5 text-gray-500" />
+                  <Search className="h-5 w-5 text-gray-700" />
                 </button>
               </form>
             </div>
             
             {isLoading ? (
               <div className="flex justify-center items-center h-64">
-                <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto shadow border border-gray-200 sm:rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                <div className="overflow-x-auto shadow-md border border-gray-300 sm:rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-100">
                       <tr>
-                        <th className="w-12 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="w-12 px-4 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
                           <input
                             type="checkbox"
                             onChange={(e) => {
@@ -319,53 +322,53 @@ export default function CreditUserPage() {
                               }
                             }}
                             checked={users.length > 0 && selectedUsers.length === users.length}
-                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            className="h-5 w-5 text-blue-600 border-gray-400 rounded focus:ring-blue-500"
                           />
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
                           Name
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
                           Email
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
                           Balance
                         </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
                           Action
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-white divide-y divide-gray-300">
                       {users.length > 0 ? (
                         users.map((user) => (
                           <tr key={user._id} className="hover:bg-gray-50">
-                            <td className="px-3 py-4 whitespace-nowrap">
+                            <td className="px-4 py-4 whitespace-nowrap">
                               <input
                                 type="checkbox"
                                 onChange={() => toggleUserSelection(user._id)}
                                 checked={selectedUsers.includes(user._id)}
-                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                className="h-5 w-5 text-blue-600 border-gray-400 rounded focus:ring-blue-500"
                               />
                             </td>
-                            <td className="px-3 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-base font-medium text-gray-900">{user.name}</div>
                             </td>
-                            <td className="px-3 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-500">{user.email}</div>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-base text-gray-700">{user.email}</div>
                             </td>
-                            <td className="px-3 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">GHS {user.walletBalance.toFixed(2)}</div>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-base font-medium text-gray-900">GHS {user.walletBalance.toFixed(2)}</div>
                             </td>
-                            <td className="px-3 py-4 whitespace-nowrap text-sm">
+                            <td className="px-4 py-4 whitespace-nowrap text-base">
                               <button
                                 onClick={() => creditSingleUser(user._id)}
                                 disabled={isCreditLoading || !amount}
-                                className={`inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+                                className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
                                   (isCreditLoading || !amount) ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                               >
-                                <PlusCircle className="mr-1 h-4 w-4" />
+                                <PlusCircle className="mr-2 h-5 w-5" />
                                 Credit
                               </button>
                             </td>
@@ -373,7 +376,7 @@ export default function CreditUserPage() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                          <td colSpan="5" className="px-6 py-4 text-center text-base text-gray-700 font-medium">
                             No users found
                           </td>
                         </tr>
@@ -382,17 +385,17 @@ export default function CreditUserPage() {
                   </table>
                 </div>
 
-                {/* Pagination */}
+                {/* Improved Pagination with better contrast */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center mt-4">
-                    <nav className="inline-flex rounded-md shadow">
+                  <div className="flex justify-center mt-6">
+                    <nav className="inline-flex rounded-md shadow-md">
                       <button
                         onClick={() => changePage(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
+                        className={`relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-400 bg-white text-base font-medium ${
                           currentPage === 1 
-                            ? 'text-gray-300 cursor-not-allowed' 
-                            : 'text-gray-500 hover:bg-gray-50'
+                            ? 'text-gray-400 cursor-not-allowed' 
+                            : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
                         Previous
@@ -402,10 +405,10 @@ export default function CreditUserPage() {
                         <button
                           key={index + 1}
                           onClick={() => changePage(index + 1)}
-                          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium ${
+                          className={`relative inline-flex items-center px-5 py-2 border border-gray-400 bg-white text-base font-medium ${
                             currentPage === index + 1
-                              ? 'text-blue-600 bg-blue-50'
-                              : 'text-gray-700 hover:bg-gray-50'
+                              ? 'text-white bg-blue-600'
+                              : 'text-gray-700 hover:bg-gray-100'
                           }`}
                         >
                           {index + 1}
@@ -415,10 +418,10 @@ export default function CreditUserPage() {
                       <button
                         onClick={() => changePage(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
+                        className={`relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-400 bg-white text-base font-medium ${
                           currentPage === totalPages 
-                            ? 'text-gray-300 cursor-not-allowed' 
-                            : 'text-gray-500 hover:bg-gray-50'
+                            ? 'text-gray-400 cursor-not-allowed' 
+                            : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
                         Next
