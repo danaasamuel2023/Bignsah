@@ -157,7 +157,7 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
 
       // If API returns success
       if (response.data && response.status === 200) {
-        savedOrder.status = 'completed';
+        // savedOrder.status = 'completed';
         savedOrder.transactionId = response.data.transactionId || null;
         savedOrder.completedAt = new Date();
         await savedOrder.save();
