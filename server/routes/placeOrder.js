@@ -506,8 +506,8 @@ router.post('/process-afa-registration', authenticateUser, async (req, res) => {
     logHubnetApiInteraction('AFA_REGISTRATION_CREATED', orderReference, { orderId: savedOrder._id });
 
     // Update order status to completed
-    savedOrder.status = 'completed';
-    savedOrder.completedAt = new Date();
+    // savedOrder.status = 'completed';
+    // savedOrder.completedAt = new Date();
     await savedOrder.save();
     
     // Create a transaction record
