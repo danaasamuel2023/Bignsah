@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const dotenv = require('dotenv');
-const { DataOrder, User,Transaction } = require('../schema/schema'); // Import Mongoose models
+const { DataOrder, User, Transaction } = require('../schema/schema'); // Import Mongoose models
 const fs = require('fs');
 const path = require('path');
 
@@ -87,6 +87,7 @@ const authenticateUser = async (req, res, next) => {
 };
 
 // Updated route that handles both creating and processing the order
+// Now with special handling for TELECEL network
 router.post('/process-data-order', authenticateUser, async (req, res) => {
   try {
     const { userId, phoneNumber, network, dataAmount, price, reference } = req.body;
@@ -130,58 +131,128 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
     const savedOrder = await newOrder.save();
     logHubnetApiInteraction('ORDER_CREATED', reference, { orderId: savedOrder._id });
 
-    try {
-      // Update order to processing
-      savedOrder.status = 'processing';
-      await savedOrder.save();
-
-      const manipulatedNetwork = manipulateNetworkType(network);
-      const apiUrl = `https://console.hubnet.app/live/api/context/business/transaction/${manipulatedNetwork}-new-transaction`;
-
-      const payload = {
-        phone: phoneNumber,
-        volume: dataAmount * 1000, // Convert GB to MB
-        reference: reference,
-        referrer: '0542408856',
-        webhook: process.env.WEBHOOK_URL || 'https://yourwebsite.com/api/webhooks/hubnet',
-      };
-
-      // Call Hubnet API
-      const response = await axios.post(apiUrl, payload, {
-        headers: {
-          'token': `Bearer MsHCxCNADx73Mod6hUBLmBG97nsQaso32yO`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000,
-      });
-
-      // If API returns success
-      if (response.data && response.status === 200) {
-        // savedOrder.status = 'completed';
-        savedOrder.transactionId = response.data.transactionId || null;
+    // Check if network is TELECEL (case-insensitive)
+    if (network.toUpperCase() === 'TELECEL') {
+      // Handle TELECEL orders directly without calling Hubnet API
+      try {
+        // Update order to processing
+        savedOrder.status = 'processing';
+        await savedOrder.save();
+        
+        logHubnetApiInteraction('TELECEL_PROCESSING', reference, { 
+          message: 'Processing TELECEL order without calling Hubnet API',
+          orderId: savedOrder._id 
+        });
+        
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Complete the order directly
+        savedOrder.status = 'completed';
         savedOrder.completedAt = new Date();
         await savedOrder.save();
 
+        // Create a transaction record
+        const transaction = new Transaction({
+          userId,
+          type: 'purchase',
+          amount: price,
+          description: `TELECEL ${dataAmount}GB Data Bundle`,
+          reference: reference,
+          status: 'completed',
+          balanceAfter: user.walletBalance,
+          metadata: {
+            orderType: 'data-bundle',
+            network: 'TELECEL',
+            phoneNumber,
+            dataAmount
+          }
+        });
+        
+        await transaction.save();
+        
+        logHubnetApiInteraction('TELECEL_COMPLETED', reference, {
+          orderId: savedOrder._id,
+          transactionId: transaction._id
+        });
+
         return res.json({
           success: true,
-          message: 'Data bundle purchased successfully',
+          message: 'TELECEL data bundle purchased successfully',
           orderId: savedOrder._id,
           reference: savedOrder.reference
         });
-      } else {
-        throw new Error(response.data?.message || 'Transaction failed');
+      } catch (error) {
+        // If processing fails, refund user
+        user.walletBalance += price;
+        await user.save();
+
+        savedOrder.status = 'failed';
+        savedOrder.failureReason = error.message || 'TELECEL processing failed';
+        await savedOrder.save();
+        
+        logHubnetApiInteraction('TELECEL_FAILED', reference, {
+          orderId: savedOrder._id,
+          error: error.message
+        });
+
+        return res.status(500).json({ success: false, error: 'TELECEL transaction failed' });
       }
+    } else {
+      // For all other networks, proceed with Hubnet API as before
+      try {
+        // Update order to processing
+        savedOrder.status = 'processing';
+        await savedOrder.save();
 
-    } catch (error) {
-      // If API call fails, refund user
-      user.walletBalance += price;
-      await user.save();
+        const manipulatedNetwork = manipulateNetworkType(network);
+        const apiUrl = `https://console.hubnet.app/live/api/context/business/transaction/${manipulatedNetwork}-new-transaction`;
 
-      savedOrder.status = 'failed';
-      savedOrder.failureReason = error.message || 'API request failed';
-      await savedOrder.save();
+        const payload = {
+          phone: phoneNumber,
+          volume: dataAmount * 1000, // Convert GB to MB
+          reference: reference,
+          referrer: '0542408856',
+          webhook: process.env.WEBHOOK_URL || 'https://yourwebsite.com/api/webhooks/hubnet',
+        };
 
-      return res.status(500).json({ success: false, error: 'Transaction failed' });
+        // Call Hubnet API
+        const response = await axios.post(apiUrl, payload, {
+          headers: {
+            'token': `Bearer MsHCxCNADx73Mod6hUBLmBG97nsQaso32yO`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        });
+
+        // If API returns success
+        if (response.data && response.status === 200) {
+          // savedOrder.status = 'completed';
+          savedOrder.transactionId = response.data.transactionId || null;
+          savedOrder.completedAt = new Date();
+          await savedOrder.save();
+
+          return res.json({
+            success: true,
+            message: 'Data bundle purchased successfully',
+            orderId: savedOrder._id,
+            reference: savedOrder.reference
+          });
+        } else {
+          throw new Error(response.data?.message || 'Transaction failed');
+        }
+
+      } catch (error) {
+        // If API call fails, refund user
+        user.walletBalance += price;
+        await user.save();
+
+        savedOrder.status = 'failed';
+        savedOrder.failureReason = error.message || 'API request failed';
+        await savedOrder.save();
+
+        return res.status(500).json({ success: false, error: 'Transaction failed' });
+      }
     }
   } catch (error) {
     return res.status(500).json({ success: false, error: 'Failed to process data order' });
@@ -298,6 +369,7 @@ router.get('/order-status/:reference', authenticateUser, async (req, res) => {
     });
   }
 });
+
 // Get all orders for a specific user
 // Update user-orders endpoint to include AFA fields
 router.get('/user-orders/:userId', authenticateUser, async (req, res) => {
@@ -363,8 +435,6 @@ router.get('/user-orders/:userId', authenticateUser, async (req, res) => {
     });
   }
 });
-
-
 
 // Simplified AFA Registration route
 // Enhanced AFA Registration route

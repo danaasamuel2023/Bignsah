@@ -22,7 +22,7 @@ const UserSchema = new mongoose.Schema({
 
 const DataOrderSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'UserNASH', required: true },
-  network: { type: String, required: true, enum: ['mtn', 'Tigo', 'Airtel','at','telecel','afa-registration'] },
+  network: { type: String, required: true, enum: ['mtn', 'Tigo', 'Airtel','at','TELECEL','afa-registration'] },
   dataAmount: { type: Number, required: true },
   price: { type: Number, required: true },
   phoneNumber: { type: String, required: true },
