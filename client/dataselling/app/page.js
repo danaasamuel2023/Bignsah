@@ -246,11 +246,7 @@ const ServicesNetwork = () => {
       </div>
       
       {/* Footer */}
-      <footer className="mt-12 py-6 bg-gray-800 dark:bg-gray-950 text-white text-center text-sm">
-        <div className="container mx-auto px-4">
-          <p>© {new Date().getFullYear()} BigNash Data Hub. All rights reserved.</p>
-        </div>
-      </footer>
+      
       
       {/* Add CSS for custom animations */}
       <style jsx global>{`
