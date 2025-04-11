@@ -136,7 +136,7 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
       // Handle TELECEL orders directly without calling Hubnet API
       try {
         // Update order to processing
-        savedOrder.status = 'processing';
+        savedOrder.status = 'pending';
         await savedOrder.save();
         
         logHubnetApiInteraction('TELECEL_PROCESSING', reference, { 
@@ -148,7 +148,7 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Complete the order directly
-        savedOrder.status = 'completed';
+        
         savedOrder.completedAt = new Date();
         await savedOrder.save();
 
