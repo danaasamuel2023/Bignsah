@@ -202,7 +202,7 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
       // For all other networks, proceed with Hubnet API as before
       try {
         // Update order to processing
-        savedOrder.status = 'processing';
+        savedOrder.status = 'pending'
         await savedOrder.save();
 
         const manipulatedNetwork = manipulateNetworkType(network);
