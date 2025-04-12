@@ -73,7 +73,9 @@ const TelecelBundleCards = () => {
     { capacity: '25', mb: '25000', price: '110.0', network: 'TELECEL' },
     { capacity: '30', mb: '30000', price: '120.00', network: 'TELECEL' },
     { capacity: '40', mb: '40000', price: '167.00', network: 'TELECEL' },
-    { capacity: '50', mb: '50000', price: '204.00', network: 'TELECEL' }
+    { capacity: '50', mb: '50000', price: '204.00', network: 'TELECEL' },
+    { capacity: '100', mb: '10000', price: '360.00', network: 'TELECEL' }
+
   ];
 
   // Telecel Logo SVG
