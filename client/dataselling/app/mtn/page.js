@@ -183,7 +183,7 @@ const MTNBundleCards = () => {
         userId: userId,
         phoneNumber: trimmedPhoneNumber,
         network: bundle.network,
-        dataAmount: dataAmountInGB,
+        dataAmount: bundle.mb,
         price: parseFloat(bundle.price),
         reference: reference
       }, {
