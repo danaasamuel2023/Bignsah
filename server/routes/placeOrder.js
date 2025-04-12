@@ -181,7 +181,7 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
       // For all other networks, proceed with Hubnet API as before
       try {
         // Update order to processing
-        savedOrder.status = 'processing';
+       
         await savedOrder.save();
         
         logHubnetApiInteraction('ORDER_STATUS_UPDATED', reference, {
