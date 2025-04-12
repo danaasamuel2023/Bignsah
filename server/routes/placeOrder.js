@@ -196,7 +196,7 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
         // Log the raw and parsed values for debugging
         const dataAmountRaw = dataAmount;
         const dataAmountParsed = parseInt(dataAmount);
-        const volumeValue = dataAmount * 1000; // This is what's causing the issue
+        const volumeValue = dataAmount 
         
         logHubnetApiInteraction('DATA_AMOUNT_PARSING', reference, {
           dataAmountRaw,
