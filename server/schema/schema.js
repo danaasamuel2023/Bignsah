@@ -83,10 +83,33 @@ const TransactionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Add this to your schema.js file
+const NetworkAvailabilitySchema = new mongoose.Schema({
+  network: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    enum: ['mtn', 'tigo', 'telecel']
+  },
+  available: { 
+    type: Boolean, 
+    default: true 
+  },
+  updatedAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
+
+// Create the model
+
+
 // module.exports = { Transaction };
 
 const User = mongoose.model('UserNASH', UserSchema);
 const DataOrder = mongoose.model('DataOrder', DataOrderSchema);
 const Transaction = mongoose.model("TransactionNASH", TransactionSchema);
+const NetworkAvailability = mongoose.model('NetworkAvailability', NetworkAvailabilitySchema);
 
-module.exports = { User, DataOrder, Transaction };
+
+module.exports = { User, DataOrder, Transaction,NetworkAvailability};

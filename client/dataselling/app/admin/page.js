@@ -200,6 +200,15 @@ export default function OrdersList() {
       default: return darkMode ? 'bg-gray-800' : 'bg-white';
     }
   };
+  
+  // Navigation functions
+  const navigateToNetworkToggle = () => {
+    router.push('/toogle');
+  };
+  
+  const navigateToUsers = () => {
+    router.push('/users');
+  };
 
   if (loading) return (
     <div className={`flex justify-center items-center min-h-screen ${getBgColor('main')}`}>
@@ -222,9 +231,23 @@ export default function OrdersList() {
       </Head>
       
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h1 className={`text-2xl font-bold ${getTextColor('heading')}`}>Orders Management</h1>
-          <div className="flex space-x-4">
+          
+          {/* Navigation and Action Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={navigateToNetworkToggle}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            >
+              Network Toggle
+            </button>
+            <button 
+              onClick={navigateToUsers}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              User Management
+            </button>
             <button 
               onClick={toggleDarkMode}
               className={`px-4 py-2 ${darkMode ? 'bg-yellow-500 hover:bg-yellow-400' : 'bg-gray-700 hover:bg-gray-600'} text-white rounded focus:outline-none focus:ring-2 focus:ring-offset-2 ${darkMode ? 'focus:ring-yellow-400' : 'focus:ring-gray-500'}`}

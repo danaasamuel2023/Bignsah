@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { User, DataOrder, Transaction } = require('../schema/schema');
+const { DataOrder, User, Transaction, NetworkAvailability } = require('../schema/schema');
 const { auth, authorize } = require('../middleware/page');
 
 // Error logging helper
@@ -361,6 +361,109 @@ router.get('/users/:id/transactions', auth, authorize('admin'), async (req, res)
   } catch (error) {
     errorLogger(error, 'Get User Transactions');
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+// Add these routes to your existing router.js file
+
+// Import the NetworkAvailability model
+
+// Initialize network availability - run this when your server starts
+const initializeNetworkAvailability = async () => {
+  try {
+    const networks = ['mtn', 'tigo', 'telecel'];
+    
+    for (const network of networks) {
+      // Check if entry exists
+      const exists = await NetworkAvailability.findOne({ network });
+      
+      // If not, create it with default value (available)
+      if (!exists) {
+        await NetworkAvailability.create({
+          network,
+          available: true,
+          updatedAt: new Date()
+        });
+        console.log(`Initialized availability for ${network}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error initializing network availability:', error);
+  }
+};
+
+// Call this when your server starts
+initializeNetworkAvailability();
+
+// Admin endpoint to toggle network availability
+router.post('/toggle-network', async (req, res) => {
+  try {
+    const { network, available } = req.body;
+    
+    if (!network || typeof available !== 'boolean') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Network name and availability status are required' 
+      });
+    }
+    
+    // Make sure network is one of the allowed values
+    if (!['mtn', 'tigo', 'telecel'].includes(network.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid network. Must be one of: mtn, tigo, telecel'
+      });
+    }
+    
+    // Find and update the network availability
+    const networkEntry = await NetworkAvailability.findOneAndUpdate(
+      { network: network.toLowerCase() },
+      { 
+        available, 
+        updatedAt: new Date() 
+      },
+      { 
+        new: true,
+        upsert: true 
+      }
+    );
+    
+    return res.json({
+      success: true,
+      message: `${network} is now ${available ? 'in stock' : 'out of stock'}`,
+      network: networkEntry
+    });
+  } catch (error) {
+    console.error('Error toggling network availability:', error);
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update network availability'
+    });
+  }
+});
+
+// Public endpoint to check all networks' availability status
+router.get('/networks-availability', async (req, res) => {
+  try {
+    const networks = await NetworkAvailability.find().select('-__v');
+    
+    // Transform to a more usable format for frontend
+    const availability = {};
+    networks.forEach(net => {
+      availability[net.network] = net.available;
+    });
+    
+    return res.json({
+      success: true,
+      networks: availability
+    });
+  } catch (error) {
+    console.error('Error fetching network availability:', error);
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch network availability'
+    });
   }
 });
 
