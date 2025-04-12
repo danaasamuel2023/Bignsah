@@ -97,7 +97,7 @@ const AirtelTigoBundleCards = () => {
       const reference = `DATA-${Math.floor(Math.random() * 1000)}`;
       
       // Directly process the order with all required data
-      const processResponse = await axios.post('http://localhost:5000/api/data/process-data-order', {
+      const processResponse = await axios.post('https://bignsah.onrender.com/api/data/process-data-order', {
         userId: userId,
         phoneNumber: trimmedPhoneNumber,
         network: bundle.network,
