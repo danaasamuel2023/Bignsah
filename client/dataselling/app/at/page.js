@@ -21,20 +21,20 @@ const AirtelTigoBundleCards = () => {
   }, []);
 
   const bundles = [
-    { capacity: '1', mb: '1000', price: '5.00', network: 'airteltigo' },
-    { capacity: '2', mb: '2000', price: '10.00', network: 'airteltigo' },
-    { capacity: '3', mb: '3000', price: '14.00', network: 'airteltigo' },
-    { capacity: '4', mb: '4000', price: '17.80', network: 'airteltigo' },
-    { capacity: '5', mb: '5000', price: '23.50', network: 'airteltigo' },
-    { capacity: '6', mb: '6000', price: '27.00', network: 'airteltigo' },
-    { capacity: '8', mb: '8000', price: '35.00', network: 'airteltigo' },
-    { capacity: '10', mb: '10000', price: '47.0', network: 'airteltigo' },
-    { capacity: '15', mb: '15000', price: '65.50', network: 'airteltigo' },
-    { capacity: '20', mb: '20000', price: '84.00', network: 'airteltigo' },
-    { capacity: '25', mb: '25000', price: '104.50', network: 'airteltigo' },
-    { capacity: '30', mb: '30000', price: '124.00', network: 'airteltigo' },
-    { capacity: '40', mb: '40000', price: '162.00', network: 'airteltigo' },
-    { capacity: '50', mb: '50000', price: '200.00', network: 'airteltigo' },
+    { capacity: '1', mb: '1000', price: '5.00', network: 'at' },
+    { capacity: '2', mb: '2000', price: '10.00', network: 'at' },
+    { capacity: '3', mb: '3000', price: '14.00', network: 'at' },
+    { capacity: '4', mb: '4000', price: '17.80', network: 'at' },
+    { capacity: '5', mb: '5000', price: '23.50', network: 'at' },
+    { capacity: '6', mb: '6000', price: '27.00', network: 'at' },
+    { capacity: '8', mb: '8000', price: '35.00', network: 'at' },
+    { capacity: '10', mb: '10000', price: '47.0', network: 'at' },
+    { capacity: '15', mb: '15000', price: '65.50', network: 'at' },
+    { capacity: '20', mb: '20000', price: '84.00', network: 'at' },
+    { capacity: '25', mb: '25000', price: '104.50', network: 'at' },
+    { capacity: '30', mb: '30000', price: '124.00', network: 'at' },
+    { capacity: '40', mb: '40000', price: '162.00', network: 'at' },
+    { capacity: '50', mb: '50000', price: '200.00', network: 'at' },
   ];
   
   // Airtel-Tigo Logo SVG with correct branding colors
@@ -97,11 +97,11 @@ const AirtelTigoBundleCards = () => {
       const reference = `DATA-${Math.floor(Math.random() * 1000)}`;
       
       // Directly process the order with all required data
-      const processResponse = await axios.post('https://bignsah.onrender.com/api/data/process-data-order', {
+      const processResponse = await axios.post('http://localhost:5000/api/data/process-data-order', {
         userId: userId,
         phoneNumber: trimmedPhoneNumber,
         network: bundle.network,
-        dataAmount: dataAmountInGB,
+        dataAmount: bundle.mb,
         price: parseFloat(bundle.price),
         reference: reference
       }, {

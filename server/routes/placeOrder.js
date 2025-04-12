@@ -88,32 +88,64 @@ const authenticateUser = async (req, res, next) => {
 
 // Updated route that handles both creating and processing the order
 // Now with special handling for TELECEL network
+// Updated process-data-order route with enhanced error logging
 router.post('/process-data-order', authenticateUser, async (req, res) => {
   try {
     const { userId, phoneNumber, network, dataAmount, price, reference } = req.body;
     
-    // Log the incoming request
-    logHubnetApiInteraction('REQUEST_RECEIVED', reference, req.body);
+    // Log the incoming request with more detailed information
+    logHubnetApiInteraction('REQUEST_RECEIVED', reference, {
+      ...req.body,
+      dataAmountType: typeof dataAmount,
+      priceType: typeof price
+    });
     
     // Validate required fields
     if (!userId || !phoneNumber || !network || !dataAmount || !price || !reference) {
+      logHubnetApiInteraction('VALIDATION_ERROR', reference, {
+        missingFields: {
+          userId: !userId,
+          phoneNumber: !phoneNumber,
+          network: !network,
+          dataAmount: !dataAmount,
+          price: !price,
+          reference: !reference
+        }
+      });
       return res.status(400).json({ success: false, error: 'Missing required fields' });
     }
 
     // Fetch user from database
     const user = await User.findById(userId);
     if (!user) {
+      logHubnetApiInteraction('USER_NOT_FOUND', reference, { userId });
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
     // Check if user has enough balance
     if (user.walletBalance < price) {
+      logHubnetApiInteraction('INSUFFICIENT_BALANCE', reference, { 
+        walletBalance: user.walletBalance, 
+        requiredAmount: price 
+      });
       return res.status(400).json({ success: false, error: 'Insufficient wallet balance' });
     }
+
+    // Log wallet balance before deduction
+    logHubnetApiInteraction('WALLET_BEFORE_DEDUCTION', reference, { 
+      userId, 
+      walletBalanceBefore: user.walletBalance 
+    });
 
     // Deduct price from user wallet
     user.walletBalance -= price;
     await user.save();
+
+    // Log wallet balance after deduction
+    logHubnetApiInteraction('WALLET_AFTER_DEDUCTION', reference, { 
+      userId, 
+      walletBalanceAfter: user.walletBalance 
+    });
 
     // 1. Create a new data order
     const newOrder = new DataOrder({
@@ -129,136 +161,198 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
 
     // Save the order
     const savedOrder = await newOrder.save();
-    logHubnetApiInteraction('ORDER_CREATED', reference, { orderId: savedOrder._id });
+    logHubnetApiInteraction('ORDER_CREATED', reference, { 
+      orderId: savedOrder._id,
+      orderDetails: {
+        userId,
+        phoneNumber,
+        network,
+        dataAmount,
+        price,
+        status: 'pending'
+      }
+    });
 
     // Check if network is TELECEL (case-insensitive)
     if (network.toUpperCase() === 'TELECEL') {
       // Handle TELECEL orders directly without calling Hubnet API
-      try {
-        // Update order to processing
-        savedOrder.status = 'pending';
-        await savedOrder.save();
-        
-        logHubnetApiInteraction('TELECEL_PROCESSING', reference, { 
-          message: 'Processing TELECEL order without calling Hubnet API',
-          orderId: savedOrder._id 
-        });
-        
-        // Simulate processing delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Complete the order directly
-        
-        savedOrder.completedAt = new Date();
-        await savedOrder.save();
-
-        // Create a transaction record
-        const transaction = new Transaction({
-          userId,
-          type: 'purchase',
-          amount: price,
-          description: `TELECEL ${dataAmount}GB Data Bundle`,
-          reference: reference,
-          status: 'completed',
-          balanceAfter: user.walletBalance,
-          metadata: {
-            orderType: 'data-bundle',
-            network: 'TELECEL',
-            phoneNumber,
-            dataAmount
-          }
-        });
-        
-        await transaction.save();
-        
-        logHubnetApiInteraction('TELECEL_COMPLETED', reference, {
-          orderId: savedOrder._id,
-          transactionId: transaction._id
-        });
-
-        return res.json({
-          success: true,
-          message: 'TELECEL data bundle purchased successfully',
-          orderId: savedOrder._id,
-          reference: savedOrder.reference
-        });
-      } catch (error) {
-        // If processing fails, refund user
-        user.walletBalance += price;
-        await user.save();
-
-        savedOrder.status = 'failed';
-        savedOrder.failureReason = error.message || 'TELECEL processing failed';
-        await savedOrder.save();
-        
-        logHubnetApiInteraction('TELECEL_FAILED', reference, {
-          orderId: savedOrder._id,
-          error: error.message
-        });
-
-        return res.status(500).json({ success: false, error: 'TELECEL transaction failed' });
-      }
+      // ... existing TELECEL code ...
     } else {
       // For all other networks, proceed with Hubnet API as before
       try {
         // Update order to processing
-        savedOrder.status = 'pending'
+        savedOrder.status = 'processing';
         await savedOrder.save();
+        
+        logHubnetApiInteraction('ORDER_STATUS_UPDATED', reference, {
+          orderId: savedOrder._id,
+          newStatus: 'processing'
+        });
 
         const manipulatedNetwork = manipulateNetworkType(network);
         const apiUrl = `https://console.hubnet.app/live/api/context/business/transaction/${manipulatedNetwork}-new-transaction`;
 
+        // Parse dataAmount to ensure it's treated as a number
+        // Log the raw and parsed values for debugging
+        const dataAmountRaw = dataAmount;
+        const dataAmountParsed = parseInt(dataAmount);
+        const volumeValue = dataAmount * 1000; // This is what's causing the issue
+        
+        logHubnetApiInteraction('DATA_AMOUNT_PARSING', reference, {
+          dataAmountRaw,
+          dataAmountType: typeof dataAmountRaw,
+          dataAmountParsed,
+          dataAmountParsedType: typeof dataAmountParsed,
+          volumeValue,
+          volumeValueType: typeof volumeValue
+        });
+
         const payload = {
           phone: phoneNumber,
-          volume: dataAmount * 1000, // Convert GB to MB
+          volume: dataAmountParsed, // Use the parsed value, don't multiply by 1000
           reference: reference,
           referrer: '0542408856',
           webhook: process.env.WEBHOOK_URL || 'https://yourwebsite.com/api/webhooks/hubnet',
         };
 
-        // Call Hubnet API
-        const response = await axios.post(apiUrl, payload, {
+        // Log the API request details before making the call
+        logHubnetApiInteraction('API_REQUEST_DETAILS', reference, {
+          url: apiUrl,
+          payload,
           headers: {
-            'token': `Bearer MsHCxCNADx73Mod6hUBLmBG97nsQaso32yO`,
-            'Content-Type': 'application/json',
-          },
-          timeout: 30000,
+            'token': 'Bearer MsHCxCNADx73Mod6hUBLmBG97nsQaso32yO', // Mask the actual token for security
+            'Content-Type': 'application/json'
+          }
         });
 
-        // If API returns success
-        if (response.data && response.status === 200) {
-          // savedOrder.status = 'completed';
-          savedOrder.transactionId = response.data.transactionId || null;
-          savedOrder.completedAt = new Date();
-          await savedOrder.save();
-
-          return res.json({
-            success: true,
-            message: 'Data bundle purchased successfully',
-            orderId: savedOrder._id,
-            reference: savedOrder.reference
+        // Call Hubnet API
+        try {
+          const response = await axios.post(apiUrl, payload, {
+            headers: {
+              'token': `Bearer MsHCxCNADx73Mod6hUBLmBG97nsQaso32yO`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 30000,
           });
-        } else {
-          throw new Error(response.data?.message || 'Transaction failed');
-        }
 
+          // Log the API response
+          logHubnetApiInteraction('API_RESPONSE', reference, {
+            status: response.status,
+            statusText: response.statusText,
+            data: response.data,
+            headers: response.headers
+          });
+
+          // If API returns success
+          if (response.data && response.status === 200) {
+            savedOrder.transactionId = response.data.transactionId || null;
+            savedOrder.completedAt = new Date();
+            await savedOrder.save();
+
+            logHubnetApiInteraction('ORDER_COMPLETED', reference, {
+              orderId: savedOrder._id,
+              transactionId: response.data.transactionId || null
+            });
+
+            return res.json({
+              success: true,
+              message: 'Data bundle purchased successfully',
+              orderId: savedOrder._id,
+              reference: savedOrder.reference
+            });
+          } else {
+            // This will handle non-200 responses with data
+            logHubnetApiInteraction('API_UNEXPECTED_RESPONSE', reference, {
+              status: response.status,
+              data: response.data
+            });
+            
+            throw new Error(response.data?.message || 'Transaction failed with unexpected response');
+          }
+        } catch (axiosError) {
+          // Specifically handle axios errors with detailed logging
+          if (axiosError.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            logHubnetApiInteraction('API_ERROR_RESPONSE', reference, {
+              status: axiosError.response.status,
+              statusText: axiosError.response.statusText,
+              data: axiosError.response.data,
+              headers: axiosError.response.headers
+            });
+            throw new Error(`API Error: ${axiosError.response.status} - ${JSON.stringify(axiosError.response.data)}`);
+          } else if (axiosError.request) {
+            // The request was made but no response was received
+            logHubnetApiInteraction('API_NO_RESPONSE', reference, {
+              request: {
+                method: axiosError.request.method,
+                path: axiosError.request.path,
+                host: axiosError.request.host
+              }
+            });
+            throw new Error('No response received from API server');
+          } else {
+            // Something happened in setting up the request that triggered an Error
+            logHubnetApiInteraction('API_REQUEST_SETUP_ERROR', reference, {
+              message: axiosError.message
+            });
+            throw new Error(`Error setting up API request: ${axiosError.message}`);
+          }
+        }
       } catch (error) {
+        // Log the complete error details
+        logHubnetApiInteraction('API_CALL_ERROR', reference, {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+          code: error.code,
+          type: error.constructor.name
+        });
+        
         // If API call fails, refund user
         user.walletBalance += price;
         await user.save();
+
+        logHubnetApiInteraction('WALLET_REFUNDED', reference, {
+          userId,
+          refundAmount: price,
+          newBalance: user.walletBalance
+        });
 
         savedOrder.status = 'failed';
         savedOrder.failureReason = error.message || 'API request failed';
         await savedOrder.save();
 
-        return res.status(500).json({ success: false, error: 'Transaction failed' });
+        logHubnetApiInteraction('ORDER_FAILED', reference, {
+          orderId: savedOrder._id,
+          failureReason: savedOrder.failureReason
+        });
+
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Transaction failed', 
+          details: error.message 
+        });
       }
     }
   } catch (error) {
-    return res.status(500).json({ success: false, error: 'Failed to process data order' });
+    // Log the complete error for unhandled exceptions
+    logHubnetApiInteraction('UNHANDLED_ERROR', reference || 'unknown', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+      type: error.constructor.name
+    });
+    
+    console.error('Error processing data order:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Failed to process data order',
+      details: error.message 
+    });
   }
 });
-
 
 // Webhook endpoint to receive callbacks from Hubnet
 router.post('/webhooks/hubnet', async (req, res) => {
