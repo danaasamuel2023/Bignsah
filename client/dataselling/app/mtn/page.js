@@ -74,7 +74,7 @@ const MTNBundleCards = () => {
     { capacity: '30', mb: '30000', price: '130.00', network: 'mtn' },
     { capacity: '40', mb: '40000', price: '173.00', network: 'mtn' },
     { capacity: '50', mb: '50000', price: '210.00', network: 'mtn' },
-    { capacity: '100', mb: '100000', price: '390.00', network: 'mtn' }
+    { capacity: '100', mb: '100000', price: '405.00', network: 'mtn' }
   ];
 
   // MTN Logo SVG
