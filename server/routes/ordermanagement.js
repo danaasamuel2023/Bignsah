@@ -370,7 +370,7 @@ router.get('/users/:id/transactions', auth, authorize('admin'), async (req, res)
 // Initialize network availability - run this when your server starts
 const initializeNetworkAvailability = async () => {
   try {
-    const networks = ['mtn', 'tigo', 'telecel'];
+    const networks = ['mtn', 'tigo', 'telecel','afa-registration', 'at'];
     
     for (const network of networks) {
       // Check if entry exists
@@ -407,7 +407,7 @@ router.post('/toggle-network', async (req, res) => {
     }
     
     // Make sure network is one of the allowed values
-    if (!['mtn', 'tigo', 'telecel'].includes(network.toLowerCase())) {
+    if (!['mtn', 'at', 'telecel','afa-registration'].includes(network.toLowerCase())) {
       return res.status(400).json({
         success: false,
         error: 'Invalid network. Must be one of: mtn, tigo, telecel'

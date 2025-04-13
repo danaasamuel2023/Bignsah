@@ -89,7 +89,7 @@ const NetworkAvailabilitySchema = new mongoose.Schema({
     type: String, 
     required: true, 
     unique: true,
-    enum: ['mtn', 'tigo', 'telecel']
+    enum: ['mtn', 'tigo', 'telecel','at','afa-registration']
   },
   available: { 
     type: Boolean, 
