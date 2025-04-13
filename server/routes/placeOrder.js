@@ -89,6 +89,8 @@ const authenticateUser = async (req, res, next) => {
 // Updated route that handles both creating and processing the order
 // Now with special handling for TELECEL network
 // Updated process-data-order route with enhanced error logging
+// Updated route that handles both creating and processing the order
+// Now with special handling for TELECEL network
 router.post('/process-data-order', authenticateUser, async (req, res) => {
   try {
     const { userId, phoneNumber, network, dataAmount, price, reference } = req.body;
@@ -176,12 +178,85 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
     // Check if network is TELECEL (case-insensitive)
     if (network.toUpperCase() === 'TELECEL') {
       // Handle TELECEL orders directly without calling Hubnet API
-      // ... existing TELECEL code ...
+      try {
+        logHubnetApiInteraction('TELECEL_ORDER_PROCESSING', reference, { 
+          orderId: savedOrder._id,
+          phoneNumber,
+          dataAmount
+        });
+        
+        // Update order status to completed since Telecel orders are processed internally
+        savedOrder.status = 'completed';
+        savedOrder.completedAt = new Date();
+        await savedOrder.save();
+        
+        logHubnetApiInteraction('TELECEL_ORDER_COMPLETED', reference, {
+          orderId: savedOrder._id
+        });
+        
+        // Create a transaction record for the successful order
+        const transaction = new Transaction({
+          userId,
+          type: 'purchase',
+          amount: price,
+          description: `${dataAmount/1000}GB Telecel Data Bundle`,
+          reference: reference,
+          status: 'pending',
+          balanceAfter: user.walletBalance,
+          metadata: {
+            orderType: 'telecel-data',
+            phoneNumber,
+            dataAmount
+          }
+        });
+        
+        await transaction.save();
+        
+        return res.json({
+          success: true,
+          message: 'Telecel data bundle purchased successfully',
+          orderId: savedOrder._id,
+          reference: savedOrder.reference
+        });
+      } catch (error) {
+        // Log the complete error details
+        logHubnetApiInteraction('TELECEL_ORDER_ERROR', reference, {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+          code: error.code,
+          type: error.constructor.name
+        });
+        
+        // If processing fails, refund user
+        user.walletBalance += price;
+        await user.save();
+
+        logHubnetApiInteraction('WALLET_REFUNDED', reference, {
+          userId,
+          refundAmount: price,
+          newBalance: user.walletBalance
+        });
+
+        savedOrder.status = 'failed';
+        savedOrder.failureReason = error.message || 'Telecel order processing failed';
+        await savedOrder.save();
+
+        logHubnetApiInteraction('TELECEL_ORDER_FAILED', reference, {
+          orderId: savedOrder._id,
+          failureReason: savedOrder.failureReason
+        });
+
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Transaction failed', 
+          details: error.message 
+        });
+      }
     } else {
       // For all other networks, proceed with Hubnet API as before
       try {
         // Update order to processing
-       
         await savedOrder.save();
         
         logHubnetApiInteraction('ORDER_STATUS_UPDATED', reference, {
