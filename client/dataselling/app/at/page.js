@@ -64,15 +64,20 @@ const AirtelTigoBundleCards = () => {
     { capacity: '3', mb: '3000', price: '14.00', network: 'at' },
     { capacity: '4', mb: '4000', price: '17.80', network: 'at' },
     { capacity: '5', mb: '5000', price: '23.50', network: 'at' },
-    { capacity: '6', mb: '6000', price: '27.00', network: 'at' },
+    { capacity: '6', mb: '6000', price: '27.50', network: 'at' },
+    { capacity: '7', mb: '7000', price: '31.90', network: 'at' },
     { capacity: '8', mb: '8000', price: '35.00', network: 'at' },
+    { capacity: '9', mb: '9000', price: '40.30', network: 'at' },
     { capacity: '10', mb: '10000', price: '47.0', network: 'at' },
+    { capacity: '12', mb: '12000', price: '53.40', network: 'at' },
     { capacity: '15', mb: '15000', price: '65.50', network: 'at' },
     { capacity: '20', mb: '20000', price: '84.00', network: 'at' },
     { capacity: '25', mb: '25000', price: '104.50', network: 'at' },
     { capacity: '30', mb: '30000', price: '124.00', network: 'at' },
     { capacity: '40', mb: '40000', price: '162.00', network: 'at' },
     { capacity: '50', mb: '50000', price: '200.00', network: 'at' },
+    { capacity: '100', mb: '10000', price: '390.00', network: 'at' },
+
   ];
   
   // Airtel-Tigo Logo SVG with correct branding colors

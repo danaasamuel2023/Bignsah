@@ -67,7 +67,7 @@ const MTNBundleCards = () => {
     { capacity: '6', mb: '6000', price: '30.00', network: 'mtn' },
     { capacity: '8', mb: '8000', price: '40.00', network: 'mtn' },
     { capacity: '10', mb: '10000', price: '49.0', network: 'mtn' },
-    { capacity: '12', mb: '15000', price: '55.50', network: 'mtn' },
+    // { capacity: '12', mb: '15000', price: '55.50', network: 'mtn' },
     { capacity: '15', mb: '15000', price: '69.0', network: 'mtn' },
     { capacity: '20', mb: '20000', price: '89.00', network: 'mtn' },
     { capacity: '25', mb: '25000', price: '112.00', network: 'mtn' },
