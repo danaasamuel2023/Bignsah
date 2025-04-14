@@ -99,7 +99,7 @@ export default function AfaRegistration() {
         setLocation('');
         // Redirect to orders page after 2 seconds
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push('/');
         }, 2000);
       } else {
         setError(response.data.error || 'Failed to process registration');
@@ -283,7 +283,7 @@ export default function AfaRegistration() {
 
           <div className="mt-4 text-center">
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/')}
               className={`text-sm ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
             >
               Back to Dashboard
