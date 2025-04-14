@@ -186,7 +186,7 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
         });
         
         // Update order status to completed since Telecel orders are processed internally
-        savedOrder.status = 'completed';
+       
         savedOrder.completedAt = new Date();
         await savedOrder.save();
         
