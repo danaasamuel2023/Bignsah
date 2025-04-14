@@ -105,7 +105,7 @@ const MTNBundleCards = () => {
     // Trim the number first to remove any whitespace
     const trimmedNumber = number.trim();
     // Basic MTN Ghana number validation (starts with 024, 054, 055, or 059)
-    const pattern = /^(024|054|055|059)\d{7}$/;
+    const pattern = /^(024|054|055|059|025)\d{7}$/;
     return pattern.test(trimmedNumber);
   };
 
