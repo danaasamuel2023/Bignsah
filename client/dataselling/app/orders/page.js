@@ -183,7 +183,7 @@ const UserOrdersHistory = () => {
                           <NetworkLogo network={order.network} />
                         </td>
                         <td className={`py-3 px-4 ${getTextColor('body')}`}>{order.phoneNumber}</td>
-                        <td className={`py-3 px-4 ${getTextColor('body')}`}>{order.dataAmount/1000} GB</td>
+                        <td className={`py-3 px-4 ${getTextColor('body')}`}>{order.dataAmount} GB</td>
                         <td className={`py-3 px-4 ${getTextColor('body')}`}>GH₵ {order.price.toFixed(2)}</td>
                         <td className={`py-3 px-4 ${getTextColor('body')}`}>{formatDate(order.createdAt)}</td>
                         <td className="py-3 px-4">
