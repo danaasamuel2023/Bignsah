@@ -336,7 +336,7 @@ export default function OrdersList() {
                           {order.phoneNumber}
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
-                          {order.network === 'afa-registration' ? 'N/A' : `${order.dataAmount} GB`}
+                          {order.network === 'afa-registration' ? 'N/A' : `${order.dataAmount/1000} GB`}
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${getTextColor('body')}`}>
                           GH₵ {order.price.toFixed(2)}
