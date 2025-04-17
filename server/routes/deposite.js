@@ -12,7 +12,6 @@ if (!PAYSTACK_SECRET_KEY) {
   throw new Error("Paystack secret key is missing in environment variables");
 }
 
-// ✅ Step 1: Initialize Paystack Payment - Updated to get email from backend
 // ✅ Step 1: Initialize Paystack Payment with metadata
 router.post("/wallet/add-funds", async (req, res) => {
   try {
@@ -79,8 +78,8 @@ router.post("/wallet/add-funds", async (req, res) => {
     return res.status(500).json({ success: false, error: "Failed to initialize payment" });
   }
 });
-// ✅ Step 2: Verify Payment & Credit Wallet
-// ✅ Step 2: Verify Payment & Credit Wallet
+
+// ✅ Step 2: Verify Payment & Credit Wallet - FIXED TO PREVENT MULTIPLE VERIFICATIONS
 router.get("/wallet/verify-payment", async (req, res) => {
   try {
     const { reference } = req.query;
@@ -89,7 +88,39 @@ router.get("/wallet/verify-payment", async (req, res) => {
       return res.status(400).json({ success: false, error: "Missing payment reference" });
     }
 
-    // Verify payment
+    // CRITICAL FIX: Check if this payment reference has already been processed
+    const existingTransaction = await Transaction.findOne({ 
+      reference: reference,
+      status: 'completed'
+    });
+
+    if (existingTransaction) {
+      console.log(`Payment with reference ${reference} has already been verified and processed.`);
+      
+      // Find the user to return the current balance
+      const user = await User.findById(existingTransaction.userId);
+      return res.json({ 
+        success: true, 
+        message: "This payment has already been verified and processed.",
+        balance: user ? user.walletBalance : null,
+        alreadyProcessed: true
+      });
+    }
+
+    // Check if there's a pending transaction first
+    const pendingTransaction = await Transaction.findOne({
+      reference: reference,
+      status: 'pending'
+    });
+
+    if (!pendingTransaction) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid payment reference or transaction not found"
+      });
+    }
+
+    // Verify payment with Paystack
     const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
@@ -106,12 +137,19 @@ router.get("/wallet/verify-payment", async (req, res) => {
       // Option 1: If your payment initialization included userId in metadata
       let user;
       
-      if (metadata && metadata.userId) {
+      // First try to get user from the pending transaction
+      if (pendingTransaction.userId) {
+        user = await User.findById(pendingTransaction.userId);
+        console.log("Looking up user by transaction userId:", pendingTransaction.userId);
+      }
+      
+      // Fallback to metadata from Paystack
+      if (!user && metadata && metadata.userId) {
         user = await User.findById(metadata.userId);
-        console.log("Looking up user by ID:", metadata.userId);
+        console.log("Looking up user by Paystack metadata userId:", metadata.userId);
       } 
       
-      // Option 2: Fallback to email lookup (with case insensitive search)
+      // Final fallback to email lookup (with case insensitive search)
       if (!user) {
         user = await User.findOne({ email: { $regex: new RegExp('^' + email + '$', 'i') } });
         console.log("Looking up user by email:", email);
@@ -122,30 +160,42 @@ router.get("/wallet/verify-payment", async (req, res) => {
         return res.status(404).json({ success: false, error: "User not found" });
       }
 
-      // Update wallet balance
-      const amountInGHS = amount / 100; // Convert from kobo
-      user.walletBalance = (user.walletBalance || 0) + amountInGHS;
-      
-      // Create transaction record
-      const transaction = new Transaction({
-        userId: user._id,
-        type: 'deposit',
-        amount: amountInGHS,
-        reference,
-        status: 'completed',
-        description: 'Wallet funding via Paystack'
-      });
-      
-      // Save both the user and transaction
-      await Promise.all([user.save(), transaction.save()]);
+      // Use a database transaction to ensure atomicity
+      const session = await User.startSession();
+      session.startTransaction();
 
-      return res.json({ 
-        success: true, 
-        message: "Wallet funded successfully", 
-        balance: user.walletBalance 
-      });
+      try {
+        // Update wallet balance
+        const amountInGHS = amount / 100; // Convert from kobo
+        user.walletBalance = (user.walletBalance || 0) + amountInGHS;
+        await user.save({ session });
+        
+        // Update the existing pending transaction to completed
+        pendingTransaction.status = 'completed';
+        pendingTransaction.amount = amountInGHS; // Ensure the amount matches what Paystack returned
+        await pendingTransaction.save({ session });
+        
+        // Commit the transaction
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.json({ 
+          success: true, 
+          message: "Wallet funded successfully", 
+          balance: user.walletBalance 
+        });
+      } catch (error) {
+        // If an error occurs, abort the transaction
+        await session.abortTransaction();
+        session.endSession();
+        throw error; // Rethrow to be caught by the outer catch block
+      }
     } else {
-      return res.status(400).json({ success: false, error: "Payment verification failed" });
+      // Update the transaction status to failed
+      pendingTransaction.status = 'failed';
+      await pendingTransaction.save();
+      
+      return res.status(400).json({ success: false, error: "Payment verification failed with Paystack" });
     }
   } catch (error) {
     console.error("Error verifying Paystack payment:", error);
@@ -155,10 +205,7 @@ router.get("/wallet/verify-payment", async (req, res) => {
 
 router.get("/wallet/balance",  async (req, res) => {
   try {
-
     const { userId } = req.query;
-
-    // const userId = req.params; // Assuming authMiddleware adds user info to req
 
     if (!userId) {
       return res.status(400).json({ success: false, error: "User ID is required" });
@@ -183,18 +230,16 @@ router.get("/wallet/balance",  async (req, res) => {
   }
 });
 
-// Get Wallet Transaction History (optional enhancement)
+// Get Wallet Transaction History
 router.get("/wallet/transactions", async (req, res) => {
   try {
-    const userId = req.body.userId; //
+    const userId = req.body.userId;
     const { page = 1, limit = 10 } = req.query;
     
     if (!userId) {
       return res.status(400).json({ success: false, error: "User ID is required" });
     }
 
-    // Assuming you have a Transaction model
-    // If not, you can create one or modify this to fit your data structure
     const transactions = await Transaction.find({ userId })
       .sort({ createdAt: -1 })
       .limit(limit * 1)
