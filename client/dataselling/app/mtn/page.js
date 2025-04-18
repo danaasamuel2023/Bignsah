@@ -256,79 +256,53 @@ const MTNBundleCards = () => {
     
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full overflow-hidden animate-fadeIn">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full overflow-hidden animate-fadeIn">
           {/* Header */}
-          <div className="bg-yellow-500 dark:bg-yellow-600 p-4">
-            <div className="flex items-center justify-center">
-              <MTNLogo />
-              <h2 className="text-2xl font-bold text-black ml-2">Confirm Purchase</h2>
-            </div>
+          <div className="bg-yellow-500 dark:bg-yellow-600 p-3">
+            <h2 className="text-lg font-bold text-black text-center">Confirm Purchase</h2>
           </div>
           
-          {/* Body */}
-          <div className="p-6">
-            {/* Purchase Details */}
-            <div className="mb-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-750 rounded-t-lg">
-                <h3 className="font-bold text-gray-800 dark:text-gray-100">Purchase Details</h3>
-              </div>
-              <div className="p-4 space-y-2 text-gray-700 dark:text-gray-200">
-                <div className="flex justify-between items-center">
-                  <span>Bundle Size:</span>
-                  <span className="font-semibold">{bundleToConfirm.capacity} GB</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Price:</span>
-                  <span className="font-semibold">GH₵ {bundleToConfirm.price}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Phone Number:</span>
-                  <span className="font-semibold">{phoneNumber}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Network:</span>
-                  <span className="font-semibold">MTN Ghana</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Duration:</span>
-                  <span className="font-semibold">No-Expiry</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Warning */}
-            <div className="mb-6 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-r-lg">
-              <div className="flex items-center">
-                <svg className="w-6 h-6 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-                <p className="font-bold text-red-800 dark:text-red-100">IMPORTANT NOTICE</p>
-              </div>
-              <p className="mt-2 text-red-700 dark:text-red-200">
-                This is the final step of your purchase. Please note that <span className="font-bold">no refunds will be provided</span> for transactions with incorrect phone numbers or any other errors.
+          {/* Body - Simplified */}
+          <div className="p-4">
+            {/* Warning - Moved to top for visibility */}
+            <div className="mb-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-3 rounded-r-lg">
+              <p className="font-bold text-red-800 dark:text-red-100 text-sm">
+                NO REFUNDS will be provided for incorrect phone numbers.
               </p>
             </div>
             
+            {/* Phone Number and Price - Essential info only */}
+            <div className="mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-700 dark:text-gray-200">Phone:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{phoneNumber}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 dark:text-gray-200">Price:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">GH₵ {bundleToConfirm.price} ({bundleToConfirm.capacity}GB)</span>
+              </div>
+            </div>
+            
             {/* Buttons */}
-            <div className="flex justify-between space-x-4">
+            <div className="flex justify-between space-x-3">
               <button
                 onClick={() => {
                   setShowConfirmation(false);
                   setBundleToConfirm(null);
                 }}
-                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors font-medium"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none transition-colors font-medium text-sm"
                 disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 onClick={handlePurchase}
-                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
+                className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none disabled:bg-green-400 disabled:cursor-not-allowed transition-colors font-medium shadow-sm text-sm"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex justify-center items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
                     Processing...
                   </div>
                 ) : (
@@ -360,7 +334,7 @@ const MTNBundleCards = () => {
       
       {message.text && (
     <div 
-      className={`mb-4 p-5 rounded-lg shadow-md ${
+      className={`mb-4 p-4 rounded-lg shadow-md ${
         message.type === 'success' 
           ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 border-l-4 border-green-500' 
           : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 border-l-4 border-red-500'
@@ -385,7 +359,7 @@ const MTNBundleCards = () => {
           <div className="text-sm text-gray-600 dark:text-gray-300">
             <p className="mb-1">Your purchase has been processed successfully.</p>
             <p>The data bundle will be activated on your phone shortly.</p>
-            <p className="mt-3 text-xs">Reference: <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">{`DATA-${Date.now()}-${Math.floor(Math.random() * 10000)}`}</span></p>
+            <p className="mt-3 text-xs">Reference: <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">{message.reference || `DATA-${Date.now().toString().substring(0, 10)}`}</span></p>
           </div>
         </div>
       )}
