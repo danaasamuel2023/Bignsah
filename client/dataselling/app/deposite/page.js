@@ -12,6 +12,8 @@ export default function Deposit() {
     const [messageType, setMessageType] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('paystack');
     const [showManualInstructions, setShowManualInstructions] = useState(false);
+    const [isPaystackAvailable, setIsPaystackAvailable] = useState(false);
+    const [showUnavailableModal, setShowUnavailableModal] = useState(false);
 
     // Momo account details
     const momoDetails = {
@@ -24,9 +26,40 @@ export default function Deposit() {
         const storedEmail = localStorage.getItem('email');
         if (storedUserId) setUserId(storedUserId);
         if (storedEmail) setEmail(storedEmail);
+        
+        // Check Paystack availability
+        checkPaystackAvailability();
     }, []);
+    
+    // Function to check if Paystack is available
+    const checkPaystackAvailability = async () => {
+        try {
+            // This could be an API call to check if Paystack is available
+            // For now, we'll just use the state you've provided
+            // In a real application, you might want to check with your backend
+            const response = await axios.get('https://bignsah.onrender.com/api/payment/paystack-status');
+            
+            if (response.data && response.data.available !== undefined) {
+                setIsPaystackAvailable(response.data.available);
+                
+                // If Paystack is not available and it's currently selected, switch to manual
+                if (!response.data.available && paymentMethod === 'paystack') {
+                    setPaymentMethod('manual');
+                }
+            }
+        } catch (error) {
+            console.error('Error checking Paystack availability:', error);
+            // Default to available to not disrupt the user experience on error
+        }
+    };
 
     const handlePaymentMethodChange = (method) => {
+        if (method === 'paystack' && !isPaystackAvailable) {
+            // Show unavailable modal instead of changing payment method
+            setShowUnavailableModal(true);
+            return;
+        }
+        
         setPaymentMethod(method);
         setMessage('');
         setShowManualInstructions(false);
@@ -57,6 +90,12 @@ export default function Deposit() {
             setShowManualInstructions(true);
             return;
         }
+        
+        // Double check if Paystack is available before proceeding
+        if (paymentMethod === 'paystack' && !isPaystackAvailable) {
+            setShowUnavailableModal(true);
+            return;
+        }
     
         setLoading(true);
         setMessage('');
@@ -65,7 +104,8 @@ export default function Deposit() {
             const response = await axios.post('https://bignsah.onrender.com/api/wallet/add-funds', {
                 userId,
                 email,
-                amount: amountValue
+                amount: amountValue,
+                paymentMethod
             });
             
             if (response.data.success) {
@@ -101,6 +141,58 @@ export default function Deposit() {
                 setMessageType('error');
             });
     };
+    
+    // Modal for unavailable Paystack
+    const UnavailableModal = () => {
+        if (!showUnavailableModal) return null;
+        
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full animate-fadeIn">
+                    <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                            Paystack Unavailable
+                        </h3>
+                    </div>
+                    
+                    <div className="p-5">
+                        <div className="flex items-center justify-center mb-4 text-red-500">
+                            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        
+                        <p className="text-center text-gray-600 dark:text-gray-300 mb-4">
+                            Paystack payment is currently unavailable. Please use Mobile Money for your deposit instead.
+                        </p>
+                        
+                        <div className="flex justify-center">
+                            <button
+                                onClick={() => {
+                                    setShowUnavailableModal(false);
+                                    setPaymentMethod('manual');
+                                }}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                            >
+                                Use Mobile Money
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+    
+    // Animation for modal
+    const fadeInAnimation = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    `;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
@@ -116,13 +208,23 @@ export default function Deposit() {
                         <button
                             type="button"
                             onClick={() => handlePaymentMethodChange('paystack')}
-                            className={`flex items-center justify-center px-4 py-3 rounded-md border ${
-                                paymentMethod === 'paystack'
+                            className={`flex items-center justify-center px-4 py-3 rounded-md border 
+                                ${paymentMethod === 'paystack'
                                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                                     : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
-                            } transition-colors duration-200 ease-in-out`}
+                                } 
+                                ${!isPaystackAvailable 
+                                    ? 'opacity-70 relative' 
+                                    : ''
+                                } 
+                                transition-colors duration-200 ease-in-out`}
                         >
                             <span className="font-medium text-gray-800 dark:text-white">Paystack</span>
+                            {!isPaystackAvailable && (
+                                <span className="absolute top-0 right-0 -mt-2 -mr-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                                    Unavailable
+                                </span>
+                            )}
                         </button>
                         <button
                             type="button"
@@ -268,6 +370,12 @@ export default function Deposit() {
                     </div>
                 )}
             </div>
+            
+            {/* Paystack Unavailable Modal */}
+            <UnavailableModal />
+            
+            {/* Add style for animations */}
+            <style dangerouslySetInnerHTML={{ __html: fadeInAnimation }} />
         </div>
     );
 }
