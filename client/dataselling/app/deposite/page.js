@@ -11,9 +11,7 @@ export default function Deposit() {
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('paystack');
-    const [transactionId, setTransactionId] = useState('');
     const [showManualInstructions, setShowManualInstructions] = useState(false);
-    const [manualPaymentSubmitted, setManualPaymentSubmitted] = useState(false);
 
     // Momo account details
     const momoDetails = {
@@ -31,7 +29,7 @@ export default function Deposit() {
     const handlePaymentMethodChange = (method) => {
         setPaymentMethod(method);
         setMessage('');
-        setManualPaymentSubmitted(false);
+        setShowManualInstructions(false);
     };
 
     const handleDeposit = async () => {
@@ -88,45 +86,6 @@ export default function Deposit() {
             setMessage(error.response?.data?.error || 'Deposit failed. Try again.');
             setMessageType('error');
         }
-        setLoading(false);
-    };
-
-    const handleManualPaymentSubmit = async () => {
-        if (!transactionId.trim()) {
-            setMessage('Please enter a transaction ID or reference.');
-            setMessageType('error');
-            return;
-        }
-
-        setLoading(true);
-        
-        try {
-            // You'll need to create an endpoint to handle manual payment verification
-            const response = await axios.post('https://bignsah.onrender.com/api/wallet/manual-deposit', {
-                userId,
-                email,
-                amount: parseFloat(amount),
-                transactionId,
-                paymentMethod: 'momo'
-            });
-            
-            if (response.data.success) {
-                setMessage('Manual deposit submitted successfully! It will be verified shortly.');
-                setMessageType('success');
-                setAmount('');
-                setTransactionId('');
-                setManualPaymentSubmitted(true);
-                setShowManualInstructions(false);
-            } else {
-                setMessage(response.data.error || 'Failed to submit manual deposit. Try again.');
-                setMessageType('error');
-            }
-        } catch (error) {
-            console.error('Manual deposit error:', error);
-            setMessage(error.response?.data?.error || 'Failed to submit manual deposit. Try again.');
-            setMessageType('error');
-        }
-        
         setLoading(false);
     };
 
@@ -221,7 +180,7 @@ export default function Deposit() {
                     </button>
                 )}
                 
-                {/* Manual Payment Instructions */}
+                {/* Manual Payment Instructions - Simplified */}
                 {showManualInstructions && (
                     <div className="mt-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                         <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Mobile Money Payment Instructions</h3>
@@ -271,35 +230,29 @@ export default function Deposit() {
                             <li className="flex items-start">
                                 <span className="flex items-center justify-center w-6 h-6 mr-2 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-medium text-xs">3</span>
                                 <div>
-                                    <p>After payment, enter the transaction ID or reference number:</p>
-                                    <input 
-                                        type="text" 
-                                        value={transactionId}
-                                        onChange={(e) => setTransactionId(e.target.value)}
-                                        placeholder="Enter Transaction ID / Reference"
-                                        className="mt-2 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                    />
+                                    <p>After payment, contact admin to verify your deposit.</p>
+                                    <p className="mt-1 text-sm italic text-gray-600 dark:text-gray-400">Your account will be credited once the payment is verified.</p>
                                 </div>
                             </li>
                         </ol>
                         
-                        <div className="mt-6 flex space-x-4">
+                        <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-md border border-yellow-200 dark:border-yellow-800">
+                            <div className="flex items-start">
+                                <svg className="h-5 w-5 text-yellow-500 dark:text-yellow-400 mt-0.5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                                    Important: Please include your email as reference when making payment to ensure quick processing.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="mt-6">
                             <button 
                                 onClick={() => setShowManualInstructions(false)}
-                                className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                             >
                                 Back
-                            </button>
-                            <button 
-                                onClick={handleManualPaymentSubmit} 
-                                disabled={loading}
-                                className={`flex-1 py-2 px-4 rounded-md text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                                    loading 
-                                        ? 'bg-blue-400 dark:bg-blue-500 cursor-not-allowed' 
-                                        : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
-                                }`}
-                            >
-                                {loading ? 'Submitting...' : 'Confirm Payment'}
                             </button>
                         </div>
                     </div>
@@ -312,21 +265,6 @@ export default function Deposit() {
                             : 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'
                     }`}>
                         {message}
-                    </div>
-                )}
-                
-                {/* Manual payment submitted success section */}
-                {manualPaymentSubmitted && (
-                    <div className="mt-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                        <div className="flex items-center justify-center mb-3">
-                            <svg className="h-10 w-10 text-green-500 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <h3 className="text-center text-lg font-medium text-green-800 dark:text-green-200 mb-1">Payment Submitted</h3>
-                        <p className="text-center text-sm text-green-700 dark:text-green-300">
-                            Your payment will be processed within 24 hours. Your account will be credited once the payment is verified.
-                        </p>
                     </div>
                 )}
             </div>
