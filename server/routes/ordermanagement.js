@@ -326,6 +326,170 @@ router.post('/bulk-credit', auth, authorize('admin'), async (req, res) => {
   }
 });
 
+// Add this route to your existing router.js file
+
+// Deduct money from user wallet (admin only)
+router.post('/users/:id/deduct', auth, authorize('admin'), async (req, res) => {
+  try {
+    const { amount, description, reason } = req.body;
+    
+    // Validate amount
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+    
+    // Validate description
+    if (!description) {
+      return res.status(400).json({ message: 'Description is required' });
+    }
+    
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if user has sufficient balance
+    if (user.walletBalance < amount) {
+      return res.status(400).json({ 
+        message: 'Insufficient balance', 
+        userBalance: user.walletBalance,
+        deductAmount: amount
+      });
+    }
+    
+    // Update wallet balance
+    const oldBalance = user.walletBalance;
+    user.walletBalance -= Number(amount);
+    await user.save();
+    
+    // Create deduction transaction
+    const transaction = new Transaction({
+      userId: user._id,
+      type: 'deduction',
+      amount: -Number(amount), // Negative amount to indicate deduction
+      description: description,
+      reference: `admin-deduct-${Date.now()}`,
+      balanceAfter: user.walletBalance,
+      metadata: { 
+        adminId: req.user.id,
+        previousBalance: oldBalance,
+        reason: reason || 'Administrative deduction'
+      }
+    });
+    await transaction.save();
+    
+    res.json({ 
+      message: 'Amount deducted successfully', 
+      deduction: {
+        amount,
+        newBalance: user.walletBalance,
+        oldBalance,
+        transaction: transaction._id
+      }
+    });
+  } catch (error) {
+    errorLogger(error, 'Admin Deduction');
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Bulk deduct from multiple users at once
+router.post('/bulk-deduct', auth, authorize('admin'), async (req, res) => {
+  try {
+    const { userIds, amount, description, reason } = req.body;
+    
+    // Validate input
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: 'No users selected for bulk deduction' });
+    }
+    
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+    
+    if (!description) {
+      return res.status(400).json({ message: 'Description is required' });
+    }
+    
+    // Process each user
+    const results = {
+      successful: [],
+      failed: []
+    };
+    
+    for (const userId of userIds) {
+      try {
+        // Find user
+        const user = await User.findById(userId);
+        if (!user) {
+          results.failed.push({ userId, reason: 'User not found' });
+          continue;
+        }
+        
+        // Check if user has sufficient balance
+        if (user.walletBalance < amount) {
+          results.failed.push({ 
+            userId, 
+            userName: user.name,
+            userEmail: user.email,
+            reason: 'Insufficient balance', 
+            balance: user.walletBalance 
+          });
+          continue;
+        }
+        
+        // Update wallet balance
+        const oldBalance = user.walletBalance;
+        user.walletBalance -= Number(amount);
+        await user.save();
+        
+        // Create deduction transaction
+        const transaction = new Transaction({
+          userId: user._id,
+          type: 'deduction',
+          amount: -Number(amount), // Negative amount to indicate deduction
+          description: description,
+          reference: `bulk-deduct-${Date.now()}-${user._id}`,
+          balanceAfter: user.walletBalance,
+          metadata: { 
+            adminId: req.user.id,
+            previousBalance: oldBalance,
+            reason: reason || 'Administrative deduction',
+            bulkOperation: true
+          }
+        });
+        await transaction.save();
+        
+        results.successful.push({
+          userId,
+          userName: user.name,
+          userEmail: user.email,
+          oldBalance,
+          newBalance: user.walletBalance,
+          transactionId: transaction._id
+        });
+        
+      } catch (error) {
+        results.failed.push({ userId, reason: error.message });
+      }
+    }
+    
+    res.json({
+      message: 'Bulk deduction operation completed',
+      summary: {
+        total: userIds.length,
+        successful: results.successful.length,
+        failed: results.failed.length
+      },
+      results
+    });
+    
+  } catch (error) {
+    errorLogger(error, 'Bulk Deduction');
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Get user transactions by type
 router.get('/users/:id/transactions', auth, authorize('admin'), async (req, res) => {
   try {
