@@ -187,7 +187,7 @@ router.post('/process-data-order', authenticateUser, async (req, res) => {
         
         // Update order status to completed since Telecel orders are processed internally
        
-        savedOrder.completedAt = new Date();
+        // savedOrder.completedAt = new Date();
         await savedOrder.save();
         
         logHubnetApiInteraction('TELECEL_ORDER_COMPLETED', reference, {
