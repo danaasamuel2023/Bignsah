@@ -14,6 +14,15 @@ const AirtelTigoBundleCards = () => {
     telecel: true
   });
   const [checkingAvailability, setCheckingAvailability] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [bundleToConfirm, setBundleToConfirm] = useState(null);
+  const [successDetails, setSuccessDetails] = useState({
+    phoneNumber: '',
+    bundleCapacity: '',
+    reference: ''
+  });
 
   // Get user ID from localStorage and check network availability on component mount
   useEffect(() => {
@@ -24,6 +33,7 @@ const AirtelTigoBundleCards = () => {
     } else {
       console.error('User ID not found in localStorage');
       setMessage({ text: 'Please login to purchase data bundles', type: 'error' });
+      setShowErrorModal(true);
     }
 
     // Check network availability
@@ -39,12 +49,13 @@ const AirtelTigoBundleCards = () => {
       if (response.data.success) {
         setNetworkAvailability(response.data.networks);
         
-        // If Airtel-Tigo is out of stock, show message
+        // If Airtel-Tigo is out of stock, show message in modal
         if (!response.data.networks.at) {
           setMessage({ 
             text: 'Airtel-Tigo bundles are currently out of stock. Please check back later.', 
             type: 'error' 
           });
+          setShowErrorModal(true);
         }
       } else {
         console.error('Failed to fetch network availability');
@@ -77,7 +88,6 @@ const AirtelTigoBundleCards = () => {
     { capacity: '40', mb: '40000', price: '162.00', network: 'at' },
     { capacity: '50', mb: '50000', price: '200.00', network: 'at' },
     { capacity: '100', mb: '10000', price: '390.00', network: 'at' },
-
   ];
   
   // Airtel-Tigo Logo SVG with correct branding colors
@@ -96,6 +106,7 @@ const AirtelTigoBundleCards = () => {
         text: 'Airtel-Tigo bundles are currently out of stock. Please check back later.', 
         type: 'error' 
       });
+      setShowErrorModal(true);
       return;
     }
     
@@ -118,7 +129,7 @@ const AirtelTigoBundleCards = () => {
     setPhoneNumber(e.target.value.trim());
   };
 
-  const handlePurchase = async (bundle) => {
+  const initiateConfirmation = (bundle) => {
     // Reset message state
     setMessage({ text: '', type: '' });
     
@@ -128,6 +139,7 @@ const AirtelTigoBundleCards = () => {
         text: 'Airtel-Tigo bundles are currently out of stock. Please check back later.', 
         type: 'error' 
       });
+      setShowErrorModal(true);
       return;
     }
     
@@ -138,6 +150,7 @@ const AirtelTigoBundleCards = () => {
     // Validate phone number
     if (!trimmedPhoneNumber) {
       setMessage({ text: 'Please enter a phone number', type: 'error' });
+      setShowErrorModal(true);
       return;
     }
     
@@ -146,15 +159,27 @@ const AirtelTigoBundleCards = () => {
         text: 'Please enter a valid Airtel-Tigo phone number (must start with 026, 027, 056, or 057 followed by 7 digits)', 
         type: 'error' 
       });
+      setShowErrorModal(true);
       return;
     }
 
     if (!userId) {
       setMessage({ text: 'Please login to purchase data bundles', type: 'error' });
+      setShowErrorModal(true);
       return;
     }
 
+    // If all validations pass, show confirmation dialog
+    setBundleToConfirm(bundle);
+    setShowConfirmation(true);
+  };
+
+  const handlePurchase = async () => {
+    if (!bundleToConfirm) return;
+    
     setIsLoading(true);
+    const bundle = bundleToConfirm;
+    const trimmedPhoneNumber = phoneNumber.trim();
 
     try {
       // Check availability one more time before sending order
@@ -167,6 +192,8 @@ const AirtelTigoBundleCards = () => {
           type: 'error' 
         });
         setIsLoading(false);
+        setShowConfirmation(false);
+        setShowErrorModal(true);
         return;
       }
       
@@ -196,17 +223,31 @@ const AirtelTigoBundleCards = () => {
       });
 
       if (processResponse.data.success) {
+        // Set success message with more details
         setMessage({ 
-          text: `${bundle.capacity}GB data bundle purchased successfully for ${trimmedPhoneNumber}`, 
+          text: `✅ ${bundle.capacity}GB data bundle purchased successfully for ${trimmedPhoneNumber}! Your bundle will be activated shortly.`, 
           type: 'success' 
         });
+        
+        // Set success details for the modal
+        setSuccessDetails({
+          phoneNumber: trimmedPhoneNumber,
+          bundleCapacity: bundle.capacity,
+          reference: reference
+        });
+        
+        // Close confirmation modal and reset states
         setSelectedBundleIndex(null);
         setPhoneNumber('');
+        
+        // Show success modal
+        setShowSuccessModal(true);
       } else {
         setMessage({ 
           text: processResponse.data.error || 'Failed to process data order', 
           type: 'error' 
         });
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Purchase error:', error);
@@ -214,8 +255,11 @@ const AirtelTigoBundleCards = () => {
         text: error.response?.data?.error || error.message || 'Failed to purchase data bundle', 
         type: 'error' 
       });
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
+      setShowConfirmation(false);
+      setBundleToConfirm(null);
     }
   };
 
@@ -232,15 +276,179 @@ const AirtelTigoBundleCards = () => {
     </div>
   );
 
+  // Confirmation Modal
+  const ConfirmationModal = () => {
+    if (!showConfirmation || !bundleToConfirm) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full overflow-hidden animate-fadeIn">
+          {/* Header */}
+          <div className="bg-blue-700 dark:bg-blue-800 p-3">
+            <h2 className="text-lg font-bold text-white text-center">Confirm Purchase</h2>
+          </div>
+          
+          {/* Body - Simplified */}
+          <div className="p-4">
+            {/* Warning - Moved to top for visibility */}
+            <div className="mb-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-3 rounded-r-lg">
+              <p className="font-bold text-red-800 dark:text-red-100 text-sm">
+                NO REFUNDS will be provided for incorrect phone numbers.
+              </p>
+            </div>
+            
+            {/* Phone Number and Price - Essential info only */}
+            <div className="mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-700 dark:text-gray-200">Phone:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{phoneNumber}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 dark:text-gray-200">Price:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">GH₵ {bundleToConfirm.price} ({bundleToConfirm.capacity}GB)</span>
+              </div>
+            </div>
+            
+            {/* Buttons */}
+            <div className="flex justify-between space-x-3">
+              <button
+                onClick={() => {
+                  setShowConfirmation(false);
+                  setBundleToConfirm(null);
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none transition-colors font-medium text-sm"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePurchase}
+                className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors font-medium shadow-sm text-sm"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex justify-center items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                    Processing...
+                  </div>
+                ) : (
+                  'Confirm Purchase'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Success Modal
+  const SuccessModal = () => {
+    if (!showSuccessModal) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full overflow-hidden animate-fadeIn">
+          {/* Header */}
+          <div className="bg-green-500 p-3">
+            <h2 className="text-lg font-bold text-white text-center">Purchase Successful!</h2>
+          </div>
+          
+          {/* Body */}
+          <div className="p-4">
+            <div className="flex items-center justify-center mb-4 text-green-500">
+              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            
+            <div className="text-center mb-4">
+              <p className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                {successDetails.bundleCapacity}GB Data Bundle Purchased!
+              </p>
+              <p className="text-gray-600 dark:text-gray-300">
+                Your bundle will be activated shortly on {successDetails.phoneNumber}.
+              </p>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Reference:</p>
+              <p className="font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded text-center text-gray-800 dark:text-gray-200">
+                {successDetails.reference}
+              </p>
+            </div>
+            
+            {/* Button */}
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors font-medium"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Error Modal
+  const ErrorModal = () => {
+    if (!showErrorModal || !message.text || message.type !== 'error') return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full overflow-hidden animate-fadeIn">
+          {/* Header */}
+          <div className="bg-red-500 p-3">
+            <h2 className="text-lg font-bold text-white text-center">Error</h2>
+          </div>
+          
+          {/* Body */}
+          <div className="p-4">
+            <div className="flex items-center justify-center mb-4 text-red-500">
+              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            
+            <div className="text-center mb-4">
+              <p className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                Unable to Complete Request
+              </p>
+              <p className="text-gray-600 dark:text-gray-300">
+                {message.text}
+              </p>
+            </div>
+            
+            {/* Button */}
+            <button
+              onClick={() => setShowErrorModal(false)}
+              className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors font-medium"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Define animation for modals
+  const fadeInAnimation = `
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+  `;
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8 text-center">Airtel-Tigo Non-Expiry Bundles</h1>
       
-      {message.text && (
-        <div className={`mb-4 p-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-          {message.text}
-        </div>
-      )}
+      {/* We no longer need to show messages in the main page as they all appear in modals */}
 
       {checkingAvailability ? (
         <div className="flex justify-center items-center p-8">
@@ -297,7 +505,7 @@ const AirtelTigoBundleCards = () => {
                     />
                   </div>
                   <button
-                    onClick={() => handlePurchase(bundle)}
+                    onClick={() => initiateConfirmation(bundle)}
                     className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-red-400 disabled:cursor-not-allowed"
                     disabled={isLoading}
                   >
@@ -312,6 +520,18 @@ const AirtelTigoBundleCards = () => {
       
       {/* Network Status Indicator */}
       <NetworkStatusIndicator />
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal />
+      
+      {/* Success Modal */}
+      <SuccessModal />
+      
+      {/* Error Modal */}
+      <ErrorModal />
+      
+      {/* Add style for animations */}
+      <style dangerouslySetInnerHTML={{ __html: fadeInAnimation }} />
     </div>
   );
 };
