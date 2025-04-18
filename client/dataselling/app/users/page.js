@@ -1,4 +1,4 @@
-// pages/admin/users/deduct.js
+// pages/admin/users/credit.js
 'use client'
 
 import { useState, useEffect } from 'react';
@@ -6,25 +6,24 @@ import { useRouter } from 'next/navigation';
 import Head from 'next/head';
 import { 
   Users, 
-  MinusCircle, 
+  CreditCard, 
   Search, 
   ArrowLeft, 
-  AlertCircle,
+  PlusCircle,
   UserCheck,
-  AlertTriangle
+  AlertCircle
 } from 'lucide-react';
 import axios from 'axios';
 
-export default function DeductUserPage() {
+export default function CreditUserPage() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [reason, setReason] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isDeductLoading, setIsDeductLoading] = useState(false);
+  const [isCreditLoading, setIsCreditLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -88,30 +87,24 @@ export default function DeductUserPage() {
     fetchUsers(page, searchQuery);
   };
 
-  // Single user deduct function
-  const deductSingleUser = async (userId) => {
+  // Single user credit function
+  const creditSingleUser = async (userId) => {
     if (!amount || parseFloat(amount) <= 0) {
       setErrorMessage('Please enter a valid amount');
       return;
     }
 
-    if (!description) {
-      setErrorMessage('Please enter a description for this deduction');
-      return;
-    }
-
-    setIsDeductLoading(true);
+    setIsCreditLoading(true);
     setSuccessMessage('');
     setErrorMessage('');
 
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `https://bignsah.onrender.com/api/users/${userId}/deduct`,
+        `https://bignsah.onrender.com/api/users/${userId}/deposit`,
         {
           amount: parseFloat(amount),
-          description: description,
-          reason: reason || 'Administrative deduction'
+          description: description || `Credit by admin`
         },
         {
           headers: {
@@ -120,28 +113,20 @@ export default function DeductUserPage() {
         }
       );
       
-      setSuccessMessage('Amount deducted successfully');
+      setSuccessMessage('User credited successfully');
       // Reset form
       setAmount('');
       setDescription('');
-      setReason('');
-      
-      // Refresh user list
-      fetchUsers(currentPage, searchQuery);
     } catch (error) {
-      console.error('Error deducting from user:', error);
-      if (error.response?.status === 400 && error.response?.data?.message === 'Insufficient balance') {
-        setErrorMessage(`User has insufficient balance (${error.response.data.userBalance} GHS)`);
-      } else {
-        setErrorMessage(error.response?.data?.message || 'Failed to deduct amount. Please try again.');
-      }
+      console.error('Error crediting user:', error);
+      setErrorMessage(error.response?.data?.message || 'Failed to credit user. Please try again.');
     } finally {
-      setIsDeductLoading(false);
+      setIsCreditLoading(false);
     }
   };
 
-  // Bulk deduct function
-  const deductMultipleUsers = async () => {
+  // Bulk credit function
+  const creditMultipleUsers = async () => {
     if (selectedUsers.length === 0) {
       setErrorMessage('Please select at least one user');
       return;
@@ -152,24 +137,18 @@ export default function DeductUserPage() {
       return;
     }
 
-    if (!description) {
-      setErrorMessage('Please enter a description for this deduction');
-      return;
-    }
-
-    setIsDeductLoading(true);
+    setIsCreditLoading(true);
     setSuccessMessage('');
     setErrorMessage('');
 
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `https://bignsah.onrender.com/api/bulk-deduct`,
+        `/api/admin/bulk-credit`,
         {
           userIds: selectedUsers,
           amount: parseFloat(amount),
-          description: description,
-          reason: reason || 'Administrative deduction'
+          description: description || `Bulk credit by admin`
         },
         {
           headers: {
@@ -178,34 +157,27 @@ export default function DeductUserPage() {
         }
       );
       
-      const { summary } = response.data;
-      
-      if (summary.failed > 0) {
-        setSuccessMessage(`Successfully deducted from ${summary.successful} users. Failed for ${summary.failed} users (likely due to insufficient balance).`);
-      } else {
-        setSuccessMessage(`Successfully deducted from ${summary.successful} users.`);
-      }
+      setSuccessMessage(`Successfully credited ${response.data.summary.successful} users`);
       
       // Reset form and selection
       setSelectedUsers([]);
       setAmount('');
       setDescription('');
-      setReason('');
       
       // Refresh user list
       fetchUsers(currentPage, searchQuery);
     } catch (error) {
-      console.error('Error bulk deducting from users:', error);
-      setErrorMessage(error.response?.data?.message || 'Failed to deduct amounts. Please try again.');
+      console.error('Error bulk crediting users:', error);
+      setErrorMessage(error.response?.data?.message || 'Failed to credit users. Please try again.');
     } finally {
-      setIsDeductLoading(false);
+      setIsCreditLoading(false);
     }
   };
 
   return (
     <>
       <Head>
-        <title>Deduct from User Wallets | Admin Dashboard</title>
+        <title>Credit User Wallets | Admin Dashboard</title>
       </Head>
 
       <div className="container mx-auto px-4 py-8 dark:bg-gray-900 min-h-screen">
@@ -219,8 +191,8 @@ export default function DeductUserPage() {
               <ArrowLeft className="h-6 w-6" />
             </button>
             <h1 className="text-2xl md:text-3xl font-bold flex items-center text-gray-900 dark:text-white">
-              <MinusCircle className="mr-2 md:mr-3 h-6 w-6 md:h-8 md:w-8 text-red-600 dark:text-red-500" />
-              <span className="flex-shrink-0">Deduct from User Wallets</span>
+              <CreditCard className="mr-2 md:mr-3 h-6 w-6 md:h-8 md:w-8" />
+              <span className="flex-shrink-0">Credit User Wallets</span>
             </h1>
           </div>
         </div>
@@ -246,71 +218,47 @@ export default function DeductUserPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-          {/* Deduct Form with dark mode support */}
+          {/* Credit Form with dark mode support */}
           <div className="bg-white dark:bg-gray-800 p-4 md:p-6 rounded-lg shadow-md lg:col-span-1 border border-gray-300 dark:border-gray-700">
-            <div className="flex items-center mb-4 md:mb-5">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Deduction Details</h2>
-              <AlertTriangle className="h-5 w-5 ml-2 text-amber-500" title="This will reduce user's wallet balance" />
-            </div>
-            
-            <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-md mb-5 border border-amber-200 dark:border-amber-800">
-              <p className="text-amber-800 dark:text-amber-300 text-sm">
-                Warning: This action will deduct funds from user wallet(s). Make sure you have a valid reason and accurate amount.
-              </p>
-            </div>
+            <h2 className="text-xl font-semibold mb-4 md:mb-5 text-gray-900 dark:text-white">Credit Information</h2>
             
             <div className="mb-4 md:mb-5">
               <label className="block text-base font-medium text-gray-800 dark:text-gray-200 mb-2">
-                Amount (GHS) <span className="text-red-600">*</span>
+                Amount (GHS)
               </label>
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter amount to deduct"
+                placeholder="Enter amount"
                 min="0"
                 step="0.01"
-                className="w-full p-3 border border-gray-400 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full p-3 border border-gray-400 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
-            </div>
-            
-            <div className="mb-4 md:mb-5">
-              <label className="block text-base font-medium text-gray-800 dark:text-gray-200 mb-2">
-                Description <span className="text-red-600">*</span>
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter description (will be visible to user)"
-                rows="2"
-                className="w-full p-3 border border-gray-400 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">This description will be visible to the user</p>
             </div>
             
             <div className="mb-5 md:mb-6">
               <label className="block text-base font-medium text-gray-800 dark:text-gray-200 mb-2">
-                Internal Reason (Optional)
+                Description (Optional)
               </label>
               <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Enter internal reason (not visible to user)"
-                rows="2"
-                className="w-full p-3 border border-gray-400 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter description"
+                rows="3"
+                className="w-full p-3 border border-gray-400 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">For internal record only, not visible to users</p>
             </div>
             
             <div>
               <button
-                onClick={deductMultipleUsers}
-                disabled={isDeductLoading || selectedUsers.length === 0}
-                className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-600 dark:hover:bg-red-700 ${
-                  (isDeductLoading || selectedUsers.length === 0) ? 'opacity-50 cursor-not-allowed' : ''
+                onClick={creditMultipleUsers}
+                disabled={isCreditLoading || selectedUsers.length === 0}
+                className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 ${
+                  (isCreditLoading || selectedUsers.length === 0) ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
-                {isDeductLoading ? (
+                {isCreditLoading ? (
                   <span className="flex items-center">
                     <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -320,8 +268,8 @@ export default function DeductUserPage() {
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <MinusCircle className="mr-2 h-5 w-5" />
-                    Deduct from Selected ({selectedUsers.length})
+                    <PlusCircle className="mr-2 h-5 w-5" />
+                    Credit Selected Users ({selectedUsers.length})
                   </span>
                 )}
               </button>
@@ -339,7 +287,7 @@ export default function DeductUserPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search users..."
-                  className="w-full md:w-auto p-2 border border-gray-400 dark:border-gray-600 rounded-l-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full md:w-auto p-2 border border-gray-400 dark:border-gray-600 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
                 <button
                   type="submit"
@@ -352,7 +300,7 @@ export default function DeductUserPage() {
             
             {isLoading ? (
               <div className="flex justify-center items-center h-64">
-                <svg className="animate-spin h-10 w-10 text-red-600 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-10 w-10 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -374,7 +322,7 @@ export default function DeductUserPage() {
                               }
                             }}
                             checked={users.length > 0 && selectedUsers.length === users.length}
-                            className="h-4 w-4 md:h-5 md:w-5 text-red-600 border-gray-400 dark:border-gray-600 rounded focus:ring-red-500"
+                            className="h-4 w-4 md:h-5 md:w-5 text-blue-600 border-gray-400 dark:border-gray-600 rounded focus:ring-blue-500"
                           />
                         </th>
                         <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -400,9 +348,7 @@ export default function DeductUserPage() {
                                 type="checkbox"
                                 onChange={() => toggleUserSelection(user._id)}
                                 checked={selectedUsers.includes(user._id)}
-                                className="h-4 w-4 md:h-5 md:w-5 text-red-600 border-gray-400 dark:border-gray-600 rounded focus:ring-red-500"
-                                disabled={user.walletBalance <= 0}
-                                title={user.walletBalance <= 0 ? "User has no balance" : ""}
+                                className="h-4 w-4 md:h-5 md:w-5 text-blue-600 border-gray-400 dark:border-gray-600 rounded focus:ring-blue-500"
                               />
                             </td>
                             <td className="px-2 md:px-4 py-3 md:py-4 whitespace-nowrap">
@@ -412,21 +358,18 @@ export default function DeductUserPage() {
                               <div className="text-sm md:text-base text-gray-700 dark:text-gray-300">{user.email}</div>
                             </td>
                             <td className="px-2 md:px-4 py-3 md:py-4 whitespace-nowrap">
-                              <div className={`text-sm md:text-base font-medium ${user.walletBalance <= 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
-                                GHS {user.walletBalance.toFixed(2)}
-                              </div>
+                              <div className="text-sm md:text-base font-medium text-gray-900 dark:text-white">GHS {user.walletBalance.toFixed(2)}</div>
                             </td>
                             <td className="px-2 md:px-4 py-3 md:py-4 whitespace-nowrap text-sm md:text-base">
                               <button
-                                onClick={() => deductSingleUser(user._id)}
-                                disabled={isDeductLoading || !amount || !description || user.walletBalance <= 0}
-                                className={`inline-flex items-center px-2 md:px-4 py-1 md:py-2 border border-transparent rounded-md shadow-sm text-sm md:text-base font-medium text-white bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${
-                                  (isDeductLoading || !amount || !description || user.walletBalance <= 0) ? 'opacity-50 cursor-not-allowed' : ''
+                                onClick={() => creditSingleUser(user._id)}
+                                disabled={isCreditLoading || !amount}
+                                className={`inline-flex items-center px-2 md:px-4 py-1 md:py-2 border border-transparent rounded-md shadow-sm text-sm md:text-base font-medium text-white bg-green-700 hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
+                                  (isCreditLoading || !amount) ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
-                                title={user.walletBalance <= 0 ? "User has no balance" : ""}
                               >
-                                <MinusCircle className="mr-1 md:mr-2 h-4 w-4 md:h-5 md:w-5" />
-                                Deduct
+                                <PlusCircle className="mr-1 md:mr-2 h-4 w-4 md:h-5 md:w-5" />
+                                Credit
                               </button>
                             </td>
                           </tr>
@@ -486,7 +429,7 @@ export default function DeductUserPage() {
                             onClick={() => changePage(pageNum)}
                             className={`relative inline-flex items-center px-3 md:px-5 py-1 md:py-2 border border-gray-400 dark:border-gray-600 text-sm md:text-base font-medium ${
                               currentPage === pageNum
-                                ? 'text-white bg-red-600 dark:bg-red-700'
+                                ? 'text-white bg-blue-600 dark:bg-blue-700'
                                 : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
                             }`}
                           >
