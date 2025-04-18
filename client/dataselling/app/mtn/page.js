@@ -14,8 +14,6 @@ const MTNBundleCards = () => {
     telecel: true
   });
   const [checkingAvailability, setCheckingAvailability] = useState(true);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [bundleToConfirm, setBundleToConfirm] = useState(null);
 
   // Get user ID from localStorage and check network availability on component mount
   useEffect(() => {
@@ -117,7 +115,7 @@ const MTNBundleCards = () => {
     setPhoneNumber(e.target.value.trim());
   };
 
-  const initiateConfirmation = (bundle) => {
+  const handlePurchase = async (bundle) => {
     // Reset message state
     setMessage({ text: '', type: '' });
     
@@ -153,17 +151,7 @@ const MTNBundleCards = () => {
       return;
     }
 
-    // If all validations pass, show confirmation dialog
-    setBundleToConfirm(bundle);
-    setShowConfirmation(true);
-  };
-
-  const handlePurchase = async () => {
-    if (!bundleToConfirm) return;
-    
     setIsLoading(true);
-    const bundle = bundleToConfirm;
-    const trimmedPhoneNumber = phoneNumber.trim();
 
     try {
       // Check availability one more time before sending order
@@ -176,7 +164,6 @@ const MTNBundleCards = () => {
           type: 'error' 
         });
         setIsLoading(false);
-        setShowConfirmation(false);
         return;
       }
       
@@ -226,8 +213,6 @@ const MTNBundleCards = () => {
       });
     } finally {
       setIsLoading(false);
-      setShowConfirmation(false);
-      setBundleToConfirm(null);
     }
   };
 
@@ -243,53 +228,6 @@ const MTNBundleCards = () => {
       </div>
     </div>
   );
-
-  // Confirmation Modal
-  const ConfirmationModal = () => {
-    if (!showConfirmation || !bundleToConfirm) return null;
-    
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
-          <h2 className="text-xl font-bold mb-4 text-center text-gray-900 dark:text-white">Confirm Purchase</h2>
-          
-          <div className="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900 border-l-4 border-yellow-500 text-yellow-800 dark:text-yellow-100">
-            <p className="font-bold">Please verify your purchase details:</p>
-            <ul className="mt-2 space-y-1">
-              <li><span className="font-semibold">Bundle:</span> {bundleToConfirm.capacity}GB</li>
-              <li><span className="font-semibold">Price:</span> GH₵ {bundleToConfirm.price}</li>
-              <li><span className="font-semibold">Phone Number:</span> {phoneNumber}</li>
-            </ul>
-          </div>
-          
-          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 border-l-4 border-red-500 text-red-800 dark:text-red-100">
-            <p className="font-bold text-center">⚠️ IMPORTANT ⚠️</p>
-            <p className="mt-2">This is the final step. No refunds will be provided for transactions with incorrect phone numbers or any other errors.</p>
-          </div>
-          
-          <div className="flex justify-between space-x-4">
-            <button
-              onClick={() => {
-                setShowConfirmation(false);
-                setBundleToConfirm(null);
-              }}
-              className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-400 dark:hover:bg-gray-700 focus:outline-none"
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handlePurchase}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Processing...' : 'Confirm Purchase'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -356,7 +294,7 @@ const MTNBundleCards = () => {
                     />
                   </div>
                   <button
-                    onClick={() => initiateConfirmation(bundle)}
+                    onClick={() => handlePurchase(bundle)}
                     className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed"
                     disabled={isLoading}
                   >
@@ -371,9 +309,6 @@ const MTNBundleCards = () => {
       
       {/* Network Status Indicator */}
       <NetworkStatusIndicator />
-      
-      {/* Confirmation Modal */}
-      <ConfirmationModal />
     </div>
   );
 };
