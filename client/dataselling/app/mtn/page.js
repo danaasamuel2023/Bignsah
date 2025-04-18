@@ -16,6 +16,13 @@ const MTNBundleCards = () => {
   const [checkingAvailability, setCheckingAvailability] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [bundleToConfirm, setBundleToConfirm] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successDetails, setSuccessDetails] = useState({
+    phoneNumber: '',
+    bundleCapacity: '',
+    reference: ''
+  });
 
   // Get user ID from localStorage and check network availability on component mount
   useEffect(() => {
@@ -41,12 +48,13 @@ const MTNBundleCards = () => {
       if (response.data.success) {
         setNetworkAvailability(response.data.networks);
         
-        // If MTN is out of stock, show message
+        // If MTN is out of stock, show message in modal
         if (!response.data.networks.mtn) {
           setMessage({ 
             text: 'MTN bundles are currently out of stock. Please check back later.', 
             type: 'error' 
           });
+          setShowErrorModal(true);
         }
       } else {
         console.error('Failed to fetch network availability');
@@ -95,6 +103,7 @@ const MTNBundleCards = () => {
         text: 'MTN bundles are currently out of stock. Please check back later.', 
         type: 'error' 
       });
+      setShowErrorModal(true);
       return;
     }
     
@@ -127,6 +136,7 @@ const MTNBundleCards = () => {
         text: 'MTN bundles are currently out of stock. Please check back later.', 
         type: 'error' 
       });
+      setShowErrorModal(true);
       return;
     }
     
@@ -137,6 +147,7 @@ const MTNBundleCards = () => {
     // Validate phone number
     if (!trimmedPhoneNumber) {
       setMessage({ text: 'Please enter a phone number', type: 'error' });
+      setShowErrorModal(true);
       return;
     }
     
@@ -145,11 +156,13 @@ const MTNBundleCards = () => {
         text: 'Please enter a valid MTN phone number (must start with 024, 054, 055, or 059 followed by 7 digits)', 
         type: 'error' 
       });
+      setShowErrorModal(true);
       return;
     }
 
     if (!userId) {
       setMessage({ text: 'Please login to purchase data bundles', type: 'error' });
+      setShowErrorModal(true);
       return;
     }
 
@@ -177,6 +190,7 @@ const MTNBundleCards = () => {
         });
         setIsLoading(false);
         setShowConfirmation(false);
+        setShowErrorModal(true);
         return;
       }
       
@@ -212,17 +226,25 @@ const MTNBundleCards = () => {
           type: 'success' 
         });
         
+        // Set success details for the modal
+        setSuccessDetails({
+          phoneNumber: trimmedPhoneNumber,
+          bundleCapacity: bundle.capacity,
+          reference: reference
+        });
+        
         // Close confirmation modal and reset states
         setSelectedBundleIndex(null);
         setPhoneNumber('');
         
-        // Scroll to the top to make sure the success message is visible
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Show success modal
+        setShowSuccessModal(true);
       } else {
         setMessage({ 
           text: processResponse.data.error || 'Failed to process data order', 
           type: 'error' 
         });
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Purchase error:', error);
@@ -230,6 +252,7 @@ const MTNBundleCards = () => {
         text: error.response?.data?.error || error.message || 'Failed to purchase data bundle', 
         type: 'error' 
       });
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
       setShowConfirmation(false);
@@ -316,7 +339,98 @@ const MTNBundleCards = () => {
     );
   };
   
-  // Define animation for modal
+  // Success Modal
+  const SuccessModal = () => {
+    if (!showSuccessModal) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full overflow-hidden animate-fadeIn">
+          {/* Header */}
+          <div className="bg-green-500 p-3">
+            <h2 className="text-lg font-bold text-white text-center">Purchase Successful!</h2>
+          </div>
+          
+          {/* Body */}
+          <div className="p-4">
+            <div className="flex items-center justify-center mb-4 text-green-500">
+              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            
+            <div className="text-center mb-4">
+              <p className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                {successDetails.bundleCapacity}GB Data Bundle Purchased!
+              </p>
+              <p className="text-gray-600 dark:text-gray-300">
+                Your bundle will be activated shortly on {successDetails.phoneNumber}.
+              </p>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Reference:</p>
+              <p className="font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded text-center text-gray-800 dark:text-gray-200">
+                {successDetails.reference}
+              </p>
+            </div>
+            
+            {/* Button */}
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors font-medium"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Error Modal
+  const ErrorModal = () => {
+    if (!showErrorModal || !message.text || message.type !== 'error') return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full overflow-hidden animate-fadeIn">
+          {/* Header */}
+          <div className="bg-red-500 p-3">
+            <h2 className="text-lg font-bold text-white text-center">Error</h2>
+          </div>
+          
+          {/* Body */}
+          <div className="p-4">
+            <div className="flex items-center justify-center mb-4 text-red-500">
+              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            
+            <div className="text-center mb-4">
+              <p className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+                Unable to Complete Request
+              </p>
+              <p className="text-gray-600 dark:text-gray-300">
+                {message.text}
+              </p>
+            </div>
+            
+            {/* Button */}
+            <button
+              onClick={() => setShowErrorModal(false)}
+              className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors font-medium"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Define animation for modals
   const fadeInAnimation = `
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(0.95); }
@@ -332,39 +446,19 @@ const MTNBundleCards = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8 text-center">MTN Non-Expiry Bundles</h1>
       
-      {message.text && (
-    <div 
-      className={`mb-4 p-4 rounded-lg shadow-md ${
-        message.type === 'success' 
-          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 border-l-4 border-green-500' 
-          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 border-l-4 border-red-500'
-      }`}
-    >
-      <div className="flex items-start">
-        {message.type === 'success' ? (
-          <svg className="w-6 h-6 mr-2 text-green-600 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        ) : (
-          <svg className="w-6 h-6 mr-2 text-red-600 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        )}
-        <span className="text-lg font-medium">{message.text}</span>
-      </div>
-      
-      {/* Success details - only show for success messages */}
-      {message.type === 'success' && (
-        <div className="mt-4 bg-white dark:bg-gray-800 p-4 rounded-lg border border-green-200 dark:border-green-800">
-          <div className="text-sm text-gray-600 dark:text-gray-300">
-            <p className="mb-1">Your purchase has been processed successfully.</p>
-            <p>The data bundle will be activated on your phone shortly.</p>
-            <p className="mt-3 text-xs">Reference: <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">{message.reference || `DATA-${Date.now().toString().substring(0, 10)}`}</span></p>
+      {/* Error message section (only show errors, not success messages) */}
+      {message.text && message.type === 'error' && (
+        <div 
+          className="mb-4 p-4 rounded-lg shadow-md bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 border-l-4 border-red-500"
+        >
+          <div className="flex items-start">
+            <svg className="w-6 h-6 mr-2 text-red-600 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span className="text-lg font-medium">{message.text}</span>
           </div>
         </div>
       )}
-    </div>
-  )}
 
       {checkingAvailability ? (
         <div className="flex justify-center items-center p-8">
@@ -439,6 +533,12 @@ const MTNBundleCards = () => {
       
       {/* Confirmation Modal */}
       <ConfirmationModal />
+      
+      {/* Success Modal */}
+      <SuccessModal />
+      
+      {/* Error Modal */}
+      <ErrorModal />
       
       {/* Add style for animations */}
       <style dangerouslySetInnerHTML={{ __html: fadeInAnimation }} />
