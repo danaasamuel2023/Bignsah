@@ -206,12 +206,18 @@ const MTNBundleCards = () => {
       });
 
       if (processResponse.data.success) {
+        // Set success message with more details
         setMessage({ 
-          text: `${bundle.capacity}GB data bundle purchased successfully for ${trimmedPhoneNumber}`, 
+          text: `✅ ${bundle.capacity}GB data bundle purchased successfully for ${trimmedPhoneNumber}! Your bundle will be activated shortly.`, 
           type: 'success' 
         });
+        
+        // Close confirmation modal and reset states
         setSelectedBundleIndex(null);
         setPhoneNumber('');
+        
+        // Scroll to the top to make sure the success message is visible
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         setMessage({ 
           text: processResponse.data.error || 'Failed to process data order', 
@@ -353,10 +359,38 @@ const MTNBundleCards = () => {
       <h1 className="text-3xl font-bold mb-8 text-center">MTN Non-Expiry Bundles</h1>
       
       {message.text && (
-        <div className={`mb-4 p-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'}`}>
-          {message.text}
+    <div 
+      className={`mb-4 p-5 rounded-lg shadow-md ${
+        message.type === 'success' 
+          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 border-l-4 border-green-500' 
+          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100 border-l-4 border-red-500'
+      }`}
+    >
+      <div className="flex items-start">
+        {message.type === 'success' ? (
+          <svg className="w-6 h-6 mr-2 text-green-600 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        ) : (
+          <svg className="w-6 h-6 mr-2 text-red-600 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        )}
+        <span className="text-lg font-medium">{message.text}</span>
+      </div>
+      
+      {/* Success details - only show for success messages */}
+      {message.type === 'success' && (
+        <div className="mt-4 bg-white dark:bg-gray-800 p-4 rounded-lg border border-green-200 dark:border-green-800">
+          <div className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="mb-1">Your purchase has been processed successfully.</p>
+            <p>The data bundle will be activated on your phone shortly.</p>
+            <p className="mt-3 text-xs">Reference: <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded">{`DATA-${Date.now()}-${Math.floor(Math.random() * 10000)}`}</span></p>
+          </div>
         </div>
       )}
+    </div>
+  )}
 
       {checkingAvailability ? (
         <div className="flex justify-center items-center p-8">
