@@ -14,6 +14,8 @@ const MTNBundleCards = () => {
     telecel: true
   });
   const [checkingAvailability, setCheckingAvailability] = useState(true);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [bundleToConfirm, setBundleToConfirm] = useState(null);
 
   // Get user ID from localStorage and check network availability on component mount
   useEffect(() => {
@@ -115,7 +117,7 @@ const MTNBundleCards = () => {
     setPhoneNumber(e.target.value.trim());
   };
 
-  const handlePurchase = async (bundle) => {
+  const initiateConfirmation = (bundle) => {
     // Reset message state
     setMessage({ text: '', type: '' });
     
@@ -151,7 +153,17 @@ const MTNBundleCards = () => {
       return;
     }
 
+    // If all validations pass, show confirmation dialog
+    setBundleToConfirm(bundle);
+    setShowConfirmation(true);
+  };
+
+  const handlePurchase = async () => {
+    if (!bundleToConfirm) return;
+    
     setIsLoading(true);
+    const bundle = bundleToConfirm;
+    const trimmedPhoneNumber = phoneNumber.trim();
 
     try {
       // Check availability one more time before sending order
@@ -164,6 +176,7 @@ const MTNBundleCards = () => {
           type: 'error' 
         });
         setIsLoading(false);
+        setShowConfirmation(false);
         return;
       }
       
@@ -213,6 +226,8 @@ const MTNBundleCards = () => {
       });
     } finally {
       setIsLoading(false);
+      setShowConfirmation(false);
+      setBundleToConfirm(null);
     }
   };
 
@@ -229,12 +244,116 @@ const MTNBundleCards = () => {
     </div>
   );
 
+  // Confirmation Modal
+  const ConfirmationModal = () => {
+    if (!showConfirmation || !bundleToConfirm) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full overflow-hidden animate-fadeIn">
+          {/* Header */}
+          <div className="bg-yellow-500 dark:bg-yellow-600 p-4">
+            <div className="flex items-center justify-center">
+              <MTNLogo />
+              <h2 className="text-2xl font-bold text-black ml-2">Confirm Purchase</h2>
+            </div>
+          </div>
+          
+          {/* Body */}
+          <div className="p-6">
+            {/* Purchase Details */}
+            <div className="mb-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-750 rounded-t-lg">
+                <h3 className="font-bold text-gray-800 dark:text-gray-100">Purchase Details</h3>
+              </div>
+              <div className="p-4 space-y-2 text-gray-700 dark:text-gray-200">
+                <div className="flex justify-between items-center">
+                  <span>Bundle Size:</span>
+                  <span className="font-semibold">{bundleToConfirm.capacity} GB</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Price:</span>
+                  <span className="font-semibold">GH₵ {bundleToConfirm.price}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Phone Number:</span>
+                  <span className="font-semibold">{phoneNumber}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Network:</span>
+                  <span className="font-semibold">MTN Ghana</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Duration:</span>
+                  <span className="font-semibold">No-Expiry</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Warning */}
+            <div className="mb-6 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-r-lg">
+              <div className="flex items-center">
+                <svg className="w-6 h-6 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <p className="font-bold text-red-800 dark:text-red-100">IMPORTANT NOTICE</p>
+              </div>
+              <p className="mt-2 text-red-700 dark:text-red-200">
+                This is the final step of your purchase. Please note that <span className="font-bold">no refunds will be provided</span> for transactions with incorrect phone numbers or any other errors.
+              </p>
+            </div>
+            
+            {/* Buttons */}
+            <div className="flex justify-between space-x-4">
+              <button
+                onClick={() => {
+                  setShowConfirmation(false);
+                  setBundleToConfirm(null);
+                }}
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors font-medium"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePurchase}
+                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors font-medium shadow-sm"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex justify-center items-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </div>
+                ) : (
+                  'Confirm Purchase'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Define animation for modal
+  const fadeInAnimation = `
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+  `;
+  
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8 text-center">MTN Non-Expiry Bundles</h1>
       
       {message.text && (
-        <div className={`mb-4 p-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+        <div className={`mb-4 p-4 rounded ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'}`}>
           {message.text}
         </div>
       )}
@@ -294,7 +413,7 @@ const MTNBundleCards = () => {
                     />
                   </div>
                   <button
-                    onClick={() => handlePurchase(bundle)}
+                    onClick={() => initiateConfirmation(bundle)}
                     className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed"
                     disabled={isLoading}
                   >
@@ -309,6 +428,12 @@ const MTNBundleCards = () => {
       
       {/* Network Status Indicator */}
       <NetworkStatusIndicator />
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal />
+      
+      {/* Add style for animations */}
+      <style dangerouslySetInnerHTML={{ __html: fadeInAnimation }} />
     </div>
   );
 };
