@@ -17,21 +17,28 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Bignash Data Hub",
   description: "Resell Data and make money",
+  openGraph: {
+    images: [
+      {
+        url: '/opengraph-image.jpg', // Path to your OpenGraph image
+        width: 1200,
+        height: 630,
+        alt: 'Bignash Data Hub',
+      },
+    ],
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-       
-                <Navbar />
-
-        {children}
-        <WhatsAppLink/>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow">
+          {children}
+        </main>
+        <WhatsAppLink />
         <Footer />
-      
       </body>
     </html>
   );

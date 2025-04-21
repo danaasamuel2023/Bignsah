@@ -70,10 +70,10 @@ const TelecelBundleCards = () => {
   };
 
   const bundles = [
-    { capacity: '1', mb: '1000', price: '7', network: 'TELECEL' },
-    { capacity: '2', mb: '2000', price: '13', network: 'TELECEL' },
-    { capacity: '3', mb: '3000', price: '18', network: 'TELECEL' },
-    { capacity: '4', mb: '4000', price: '23.00', network: 'TELECEL' },
+    // { capacity: '1', mb: '1000', price: '7', network: 'TELECEL' },
+    // { capacity: '2', mb: '2000', price: '13', network: 'TELECEL' },
+    // { capacity: '3', mb: '3000', price: '18', network: 'TELECEL' },
+    // { capacity: '4', mb: '4000', price: '23.00', network: 'TELECEL' },
     { capacity: '5', mb: '5000', price: '25.00', network: 'TELECEL' },
     // { capacity: '6', mb: '6000', price: '28.00', network: 'TELECEL' },
      { capacity: '8', mb: '8000', price: '40.00', network: 'TELECEL' },
