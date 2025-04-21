@@ -20,7 +20,7 @@ export const metadata = {
   openGraph: {
     images: [
       {
-        url: '/opengraph-image.jpg', // Path to your OpenGraph image
+        url: '/opengraph-image.jpg', 
         width: 1200,
         height: 630,
         alt: 'Bignash Data Hub',
