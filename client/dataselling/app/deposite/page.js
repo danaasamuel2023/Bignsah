@@ -12,7 +12,7 @@ export default function Deposit() {
     const [messageType, setMessageType] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('paystack');
     const [showManualInstructions, setShowManualInstructions] = useState(false);
-    const [isPaystackAvailable, setIsPaystackAvailable] = useState(false);
+    const [isPaystackAvailable, setIsPaystackAvailable] = useState(true);
     const [showUnavailableModal, setShowUnavailableModal] = useState(false);
 
     // Momo account details
