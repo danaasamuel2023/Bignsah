@@ -1,44 +1,154 @@
 const express = require("express");
 const axios = require("axios");
+const crypto = require("crypto");
 const dotenv = require("dotenv");
 const { User, Transaction } = require("../schema/schema");
 
 dotenv.config();
 const router = express.Router();
 
-const PAYSTACK_SECRET_KEY = 'sk_live_3dcaf1a28ed77172796e90843a6b86ff9cef4a6c';
+const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || 'sk_live_3dcaf1a28ed77172796e90843a6b86ff9cef4a6c';
 
 if (!PAYSTACK_SECRET_KEY) {
   throw new Error("Paystack secret key is missing in environment variables");
 }
 
-// ✅ Step 1: Initialize Paystack Payment with metadata
-router.post("/wallet/add-funds", async (req, res) => {
+// Define minimum and maximum deposit amounts for validation
+const DEPOSIT_LIMITS = {
+  MIN: 1.00,      // Minimum GH₵ 1.00
+  MAX: 10000.00   // Maximum GH₵ 10,000.00
+};
+
+// Helper function to validate deposit amount
+const validateDepositAmount = (amount) => {
+  const numAmount = parseFloat(amount);
+  
+  // Check if amount is a valid number
+  if (isNaN(numAmount) || numAmount <= 0) {
+    return {
+      valid: false,
+      error: `Invalid amount. Amount must be a positive number.`
+    };
+  }
+  
+  // Check minimum limit
+  if (numAmount < DEPOSIT_LIMITS.MIN) {
+    return {
+      valid: false,
+      error: `Deposit amount is too low. Minimum is GH₵${DEPOSIT_LIMITS.MIN.toFixed(2)}`
+    };
+  }
+  
+  // Check maximum limit
+  if (numAmount > DEPOSIT_LIMITS.MAX) {
+    return {
+      valid: false,
+      error: `Deposit amount exceeds maximum. Maximum is GH₵${DEPOSIT_LIMITS.MAX.toFixed(2)}`
+    };
+  }
+  
+  // Check for more than 2 decimal places
+  if (!/^\d+(\.\d{1,2})?$/.test(numAmount.toFixed(2))) {
+    return {
+      valid: false,
+      error: `Amount must have maximum 2 decimal places`
+    };
+  }
+  
+  return {
+    valid: true,
+    amount: numAmount
+  };
+};
+
+// Authentication middleware
+const authenticateUser = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    res.status(401).json({ error: 'Authentication failed' });
+  }
+};
+
+// ✅ Step 1: Initialize Paystack Payment with strict validation
+router.post("/wallet/add-funds", authenticateUser, async (req, res) => {
   try {
     const { userId, amount } = req.body;
 
-    if (!userId || !amount) {
-      return res.status(400).json({ success: false, error: "Missing required fields" });
+    // Validate required fields
+    if (!userId || amount === undefined || amount === null) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Missing required fields: userId and amount" 
+      });
     }
 
-    // Fetch user from database to get email
+    // Validate deposit amount (CRITICAL SECURITY CHECK)
+    const amountValidation = validateDepositAmount(amount);
+    
+    if (!amountValidation.valid) {
+      console.log(`[DEPOSIT] Amount validation failed - ${amountValidation.error}`, {
+        userId,
+        attemptedAmount: amount
+      });
+      
+      return res.status(400).json({ 
+        success: false, 
+        error: amountValidation.error
+      });
+    }
+
+    const validatedAmount = amountValidation.amount;
+
+    // Fetch user from database
     const user = await User.findById(userId);
     
     if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
+      console.log(`[DEPOSIT] User not found: ${userId}`);
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found" 
+      });
     }
 
-    const email = user.email; // Get email from user object
+    const email = user.email;
 
-    const response = await axios.post(
+    if (!email) {
+      console.log(`[DEPOSIT] User email not found: ${userId}`);
+      return res.status(400).json({ 
+        success: false, 
+        error: "User email not configured" 
+      });
+    }
+
+    console.log(`[DEPOSIT] Initializing payment for user ${userId} - Amount: GH₵${validatedAmount}`, {
+      userId,
+      email,
+      amount: validatedAmount
+    });
+
+    // Initialize Paystack transaction
+    const paystackResponse = await axios.post(
       "https://api.paystack.co/transaction/initialize",
       {
         email,
-        amount: amount * 100, // Convert to kobo (smallest unit)
+        amount: Math.round(validatedAmount * 100), // Convert to kobo, ensure it's integer
         currency: "GHS", 
         callback_url: `https://www.bignashdatahub.com/verify-payment`,
         metadata: {
-          userId: userId, // Add userId to metadata for more reliable user lookup
+          userId: userId,
           custom_fields: [
             {
               display_name: "User ID",
@@ -56,358 +166,126 @@ router.post("/wallet/add-funds", async (req, res) => {
       }
     );
 
+    const reference = paystackResponse.data.data.reference;
+
     // Create a pending transaction record
     const transaction = new Transaction({
       userId,
       type: 'deposit',
-      amount,
-      reference: response.data.data.reference,
+      amount: validatedAmount,
+      reference: reference,
       status: 'pending',
-      description: 'Wallet funding via Paystack'
+      description: 'Wallet funding via Paystack',
+      metadata: {
+        source: 'paystack',
+        initialAmount: validatedAmount,
+        timestamp: new Date()
+      }
     });
     
     await transaction.save();
 
+    console.log(`[DEPOSIT] Transaction created - Reference: ${reference}, Amount: GH₵${validatedAmount}`);
+
     return res.json({ 
       success: true, 
-      authorizationUrl: response.data.data.authorization_url,
-      reference: response.data.data.reference
-    });
-  } catch (error) {
-    console.error("Error initializing Paystack payment:", error);
-    return res.status(500).json({ success: false, error: "Failed to initialize payment" });
-  }
-});
-
-// ✅ Step 2: Verify Payment & Credit Wallet - FIXED TO PREVENT MULTIPLE VERIFICATIONS
-router.get("/wallet/verify-payment", async (req, res) => {
-  try {
-    const { reference } = req.query;
-
-    if (!reference) {
-      return res.status(400).json({ success: false, error: "Missing payment reference" });
-    }
-
-    // CRITICAL FIX: Check if this payment reference has already been processed
-    const existingTransaction = await Transaction.findOne({ 
+      authorizationUrl: paystackResponse.data.data.authorization_url,
       reference: reference,
-      status: 'completed'
+      amount: validatedAmount
     });
-
-    if (existingTransaction) {
-      console.log(`Payment with reference ${reference} has already been verified and processed.`);
-      
-      // Find the user to return the current balance
-      const user = await User.findById(existingTransaction.userId);
-      return res.json({ 
-        success: true, 
-        message: "This payment has already been verified and processed.",
-        balance: user ? user.walletBalance : null,
-        alreadyProcessed: true
-      });
-    }
-
-    // Check if there's a pending transaction first
-    const pendingTransaction = await Transaction.findOne({
-      reference: reference,
-      status: 'pending'
-    });
-
-    if (!pendingTransaction) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Invalid payment reference or transaction not found"
-      });
-    }
-
-    // Verify payment with Paystack
-    const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-      },
-    });
-
-    if (response.data.data.status === "success") {
-      const { email, amount, metadata } = response.data.data;
-      
-      console.log("Paystack response data:", response.data.data);
-      console.log("Email from Paystack:", email);
-      
-      // Find the user and update wallet balance
-      // Option 1: If your payment initialization included userId in metadata
-      let user;
-      
-      // First try to get user from the pending transaction
-      if (pendingTransaction.userId) {
-        user = await User.findById(pendingTransaction.userId);
-        console.log("Looking up user by transaction userId:", pendingTransaction.userId);
-      }
-      
-      // Fallback to metadata from Paystack
-      if (!user && metadata && metadata.userId) {
-        user = await User.findById(metadata.userId);
-        console.log("Looking up user by Paystack metadata userId:", metadata.userId);
-      } 
-      
-      // Final fallback to email lookup (with case insensitive search)
-      if (!user) {
-        user = await User.findOne({ email: { $regex: new RegExp('^' + email + '$', 'i') } });
-        console.log("Looking up user by email:", email);
-      }
-
-      if (!user) {
-        console.log("User not found with email:", email);
-        return res.status(404).json({ success: false, error: "User not found" });
-      }
-
-      // Use a database transaction to ensure atomicity
-      const session = await User.startSession();
-      session.startTransaction();
-
-      try {
-        // Update wallet balance
-        const amountInGHS = amount / 100; // Convert from kobo
-        user.walletBalance = (user.walletBalance || 0) + amountInGHS;
-        await user.save({ session });
-        
-        // Update the existing pending transaction to completed
-        pendingTransaction.status = 'completed';
-        pendingTransaction.amount = amountInGHS; // Ensure the amount matches what Paystack returned
-        await pendingTransaction.save({ session });
-        
-        // Commit the transaction
-        await session.commitTransaction();
-        session.endSession();
-
-        return res.json({ 
-          success: true, 
-          message: "Wallet funded successfully", 
-          balance: user.walletBalance 
-        });
-      } catch (error) {
-        // If an error occurs, abort the transaction
-        await session.abortTransaction();
-        session.endSession();
-        throw error; // Rethrow to be caught by the outer catch block
-      }
-    } else {
-      // Update the transaction status to failed
-      pendingTransaction.status = 'failed';
-      await pendingTransaction.save();
-      
-      return res.status(400).json({ success: false, error: "Payment verification failed with Paystack" });
-    }
   } catch (error) {
-    console.error("Error verifying Paystack payment:", error);
-    return res.status(500).json({ success: false, error: "Payment verification failed" });
+    console.error("[DEPOSIT] Error initializing Paystack payment:", error.message);
+    return res.status(500).json({ 
+      success: false, 
+      error: "Failed to initialize payment" 
+    });
   }
 });
 
-router.get("/wallet/balance",  async (req, res) => {
+// Helper function to verify payment amount with Paystack
+const verifyPaystackAmount = async (reference) => {
   try {
-    const { userId } = req.query;
-
-    if (!userId) {
-      return res.status(400).json({ success: false, error: "User ID is required" });
-    }
-
-    // Find the user and get their wallet balance
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
-
-    // Return the wallet balance
-    return res.json({
-      success: true,
-      balance: user.walletBalance || 0,
-      currency: "GHS"
-    });
-  } catch (error) {
-    console.error("Error fetching wallet balance:", error);
-    return res.status(500).json({ success: false, error: "Failed to fetch wallet balance" });
-  }
-});
-
-// Get Wallet Transaction History
-router.get("/wallet/transactions", async (req, res) => {
-  try {
-    const userId = req.body.userId;
-    const { page = 1, limit = 10 } = req.query;
-    
-    if (!userId) {
-      return res.status(400).json({ success: false, error: "User ID is required" });
-    }
-
-    const transactions = await Transaction.find({ userId })
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .exec();
-
-    const count = await Transaction.countDocuments({ userId });
-
-    return res.json({
-      success: true,
-      transactions,
-      totalPages: Math.ceil(count / limit),
-      currentPage: page
-    });
-  } catch (error) {
-    console.error("Error fetching transaction history:", error);
-    return res.status(500).json({ success: false, error: "Failed to fetch transaction history" });
-  }
-});
-
-module.exports = router;// ✅ Step 1: Initialize Paystack Payment with metadata
-router.post("/wallet/add-funds", async (req, res) => {
-  try {
-    const { userId, amount } = req.body;
-
-    if (!userId || !amount) {
-      return res.status(400).json({ success: false, error: "Missing required fields" });
-    }
-
-    // Fetch user from database to get email
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
-
-    const email = user.email; // Get email from user object
-
-    const response = await axios.post(
-      "https://api.paystack.co/transaction/initialize",
-      {
-        email,
-        amount: amount * 100, // Convert to kobo (smallest unit)
-        currency: "GHS", 
-        callback_url: `https://data-mall.vercel.app/verify-payment`,
-        metadata: {
-          userId: userId, // Add userId to metadata for more reliable user lookup
-          custom_fields: [
-            {
-              display_name: "User ID",
-              variable_name: "user_id",
-              value: userId
-            }
-          ]
-        }
-      },
+    const response = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`, 
       {
         headers: {
           Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json",
         },
       }
     );
 
-    // Create a pending transaction record
-    const transaction = new Transaction({
-      userId,
-      type: 'deposit',
-      amount,
-      reference: response.data.data.reference,
-      status: 'pending',
-      description: 'Wallet funding via Paystack'
-    });
-    
-    await transaction.save();
-
-    return res.json({ 
-      success: true, 
-      authorizationUrl: response.data.data.authorization_url,
-      reference: response.data.data.reference
-    });
+    return response.data.data;
   } catch (error) {
-    console.error("Error initializing Paystack payment:", error);
-    return res.status(500).json({ success: false, error: "Failed to initialize payment" });
+    console.error(`[VERIFY] Error verifying with Paystack:`, error.message);
+    throw error;
   }
-});
+};
 
-// ✅ NEW: Paystack Webhook Handler
-router.post("/paystack/webhook", async (req, res) => {
-  try {
-    // Log incoming webhook
-    console.log('Webhook received:', JSON.stringify({
-      headers: req.headers['x-paystack-signature'],
-      event: req.body.event,
-      reference: req.body.data?.reference
-    }));
-
-    // Verify webhook signature
-    const hash = crypto
-      .createHmac('sha512', PAYSTACK_SECRET_KEY)
-      .update(JSON.stringify(req.body))
-      .digest('hex');
-
-    if (hash !== req.headers['x-paystack-signature']) {
-      console.error('Invalid webhook signature');
-      return res.status(400).json({ error: 'Invalid signature' });
-    }
-
-    const event = req.body;
-
-    // Handle successful charge
-    if (event.event === 'charge.success') {
-      const { reference, amount, metadata, customer } = event.data;
-      
-      console.log(`Processing successful payment for reference: ${reference}`);
-
-      // Process the successful payment
-      const result = await processSuccessfulPayment(reference, amount, metadata, customer);
-      
-      return res.json({ message: result.message });
-    }
-    
-    // Handle failed charge
-    else if (event.event === 'charge.failed') {
-      const { reference } = event.data;
-      
-      // Update transaction status to failed
-      await Transaction.findOneAndUpdate(
-        { reference, status: 'pending' },
-        { status: 'failed' }
-      );
-      
-      console.log(`Payment failed for reference: ${reference}`);
-      return res.json({ message: 'Payment failure recorded' });
-    }
-    
-    // Log other events
-    else {
-      console.log(`Unhandled event type: ${event.event}`);
-      return res.json({ message: 'Event received' });
-    }
-
-  } catch (error) {
-    console.error('Webhook Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Helper function to process successful payment with locking mechanism
+// Helper function to process successful payment
 async function processSuccessfulPayment(reference, amountInKobo, metadata, customer) {
+  // Validate amount from Paystack against database
+  const amountInGHS = amountInKobo / 100;
+  
+  console.log(`[PROCESS] Processing payment - Reference: ${reference}, Amount: GH₵${amountInGHS}`);
+
+  // Find the pending transaction
+  const transaction = await Transaction.findOne({
+    reference: reference,
+    status: 'pending'
+  });
+
+  if (!transaction) {
+    console.log(`[PROCESS] No pending transaction found for reference: ${reference}`);
+    return { 
+      success: false, 
+      message: 'Transaction not found or already processed' 
+    };
+  }
+
+  // CRITICAL SECURITY CHECK: Verify amount matches what we initialized
+  const initialAmount = transaction.amount;
+  const amountDifference = Math.abs(amountInGHS - initialAmount);
+
+  if (amountDifference > 0.01) { // Allow 0.01 tolerance for floating point
+    console.error(`[SECURITY] Amount mismatch detected!`, {
+      reference,
+      initialAmount,
+      receivedAmount: amountInGHS,
+      difference: amountDifference
+    });
+
+    // Mark transaction as suspicious
+    transaction.status = 'failed';
+    transaction.failureReason = `Amount mismatch: Expected GH₵${initialAmount}, received GH₵${amountInGHS}`;
+    await transaction.save();
+
+    return { 
+      success: false, 
+      message: 'Payment amount verification failed' 
+    };
+  }
+
   // Use findOneAndUpdate to prevent race conditions
-  const transaction = await Transaction.findOneAndUpdate(
+  const updatedTransaction = await Transaction.findOneAndUpdate(
     { 
       reference, 
       status: 'pending',
-      processing: { $ne: true } // Only process if not already being processed
+      processing: { $ne: true }
     },
     { 
       $set: { 
-        processing: true  // Mark as being processed
+        processing: true
       } 
     },
     { new: true }
   );
 
-  if (!transaction) {
-    console.log(`Transaction ${reference} not found or already processed`);
-    return { success: false, message: 'Transaction not found or already processed' };
+  if (!updatedTransaction) {
+    console.log(`[PROCESS] Transaction already being processed: ${reference}`);
+    return { 
+      success: false, 
+      message: 'Transaction is already being processed' 
+    };
   }
 
   const session = await User.startSession();
@@ -417,17 +295,14 @@ async function processSuccessfulPayment(reference, amountInKobo, metadata, custo
     // Find the user
     let user;
     
-    // Try to find user by transaction userId first
-    if (transaction.userId) {
-      user = await User.findById(transaction.userId).session(session);
+    if (updatedTransaction.userId) {
+      user = await User.findById(updatedTransaction.userId).session(session);
     }
     
-    // Fallback to metadata userId
     if (!user && metadata && metadata.userId) {
       user = await User.findById(metadata.userId).session(session);
     }
     
-    // Final fallback to email
     if (!user && customer && customer.email) {
       user = await User.findOne({ 
         email: { $regex: new RegExp('^' + customer.email + '$', 'i') } 
@@ -438,62 +313,85 @@ async function processSuccessfulPayment(reference, amountInKobo, metadata, custo
       throw new Error('User not found');
     }
 
-    // Update user balance
-    const amountInGHS = amountInKobo / 100;
+    // SECURITY: Verify user hasn't changed their wallet balance unexpectedly
     const previousBalance = user.walletBalance || 0;
+    
+    // Final amount validation before credit
+    const finalValidation = validateDepositAmount(amountInGHS);
+    if (!finalValidation.valid) {
+      throw new Error(`Final amount validation failed: ${finalValidation.error}`);
+    }
+
+    // Update user balance
     user.walletBalance = previousBalance + amountInGHS;
     await user.save({ session });
 
-    // Update transaction with balance tracking
-    transaction.status = 'completed';
-    transaction.amount = amountInGHS;
-    transaction.balanceBefore = previousBalance;
-    transaction.balanceAfter = user.walletBalance;
-    transaction.processing = false;
-    await transaction.save({ session });
+    // Update transaction record
+    updatedTransaction.status = 'completed';
+    updatedTransaction.amount = amountInGHS;
+    updatedTransaction.balanceBefore = previousBalance;
+    updatedTransaction.balanceAfter = user.walletBalance;
+    updatedTransaction.processing = false;
+    await updatedTransaction.save({ session });
 
     // Commit the transaction
     await session.commitTransaction();
     session.endSession();
 
-    console.log(`Transaction ${reference} completed. User ${user._id} balance: ${previousBalance} -> ${user.walletBalance}`);
+    console.log(`[PROCESS] Payment completed successfully`, {
+      reference,
+      userId: user._id,
+      amount: amountInGHS,
+      balanceBefore: previousBalance,
+      balanceAfter: user.walletBalance
+    });
     
-    return { success: true, message: 'Deposit successful', newBalance: user.walletBalance };
+    return { 
+      success: true, 
+      message: 'Deposit successful', 
+      newBalance: user.walletBalance 
+    };
   } catch (error) {
-    // Rollback on error
     await session.abortTransaction();
     session.endSession();
     
-    // Release the processing lock
-    transaction.processing = false;
-    transaction.status = 'failed';
-    await transaction.save();
+    updatedTransaction.processing = false;
+    updatedTransaction.status = 'failed';
+    updatedTransaction.failureReason = error.message;
+    await updatedTransaction.save();
     
-    console.error('Payment processing error:', error);
-    return { success: false, message: error.message };
+    console.error('[PROCESS] Payment processing error:', error.message);
+    return { 
+      success: false, 
+      message: error.message 
+    };
   }
 }
 
-// ✅ Step 2: Verify Payment & Credit Wallet - FIXED TO PREVENT MULTIPLE VERIFICATIONS
+// ✅ Step 2: Verify Payment & Credit Wallet
 router.get("/wallet/verify-payment", async (req, res) => {
   try {
     const { reference } = req.query;
 
     if (!reference) {
-      return res.status(400).json({ success: false, error: "Missing payment reference" });
+      return res.status(400).json({ 
+        success: false, 
+        error: "Missing payment reference" 
+      });
     }
 
-    // CRITICAL FIX: Check if this payment reference has already been processed
-    const existingTransaction = await Transaction.findOne({ 
+    console.log(`[VERIFY] Verifying payment - Reference: ${reference}`);
+
+    // Check if already completed
+    const completedTransaction = await Transaction.findOne({ 
       reference: reference,
       status: 'completed'
     });
 
-    if (existingTransaction) {
-      console.log(`Payment with reference ${reference} has already been verified and processed.`);
+    if (completedTransaction) {
+      console.log(`[VERIFY] Payment already completed: ${reference}`);
       
-      // Find the user to return the current balance
-      const user = await User.findById(existingTransaction.userId);
+      const user = await User.findById(completedTransaction.userId);
       return res.json({ 
         success: true, 
         message: "This payment has already been verified and processed.",
@@ -502,30 +400,32 @@ router.get("/wallet/verify-payment", async (req, res) => {
       });
     }
 
-    // Check if there's a pending transaction first
+    // Check if pending transaction exists
     const pendingTransaction = await Transaction.findOne({
       reference: reference,
       status: 'pending'
     });
 
     if (!pendingTransaction) {
+      console.log(`[VERIFY] No pending transaction found: ${reference}`);
       return res.status(400).json({ 
         success: false, 
         error: "Invalid payment reference or transaction not found"
       });
     }
 
-    // Verify payment with Paystack
-    const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-      },
-    });
+    // Verify with Paystack
+    const paystackData = await verifyPaystackAmount(reference);
 
-    if (response.data.data.status === "success") {
-      const { email, amount, metadata } = response.data.data;
+    if (paystackData.status === "success") {
+      const { email, amount, metadata } = paystackData;
       
-      // Process the payment using the helper function
+      console.log(`[VERIFY] Paystack verification successful`, {
+        reference,
+        amount,
+        email
+      });
+
       const result = await processSuccessfulPayment(
         reference, 
         amount, 
@@ -546,53 +446,126 @@ router.get("/wallet/verify-payment", async (req, res) => {
         });
       }
     } else {
-      // Update the transaction status to failed
       pendingTransaction.status = 'failed';
       await pendingTransaction.save();
       
-      return res.status(400).json({ success: false, error: "Payment verification failed with Paystack" });
+      console.log(`[VERIFY] Paystack verification failed: ${reference}`);
+      return res.status(400).json({ 
+        success: false, 
+        error: "Payment verification failed with Paystack" 
+      });
     }
   } catch (error) {
-    console.error("Error verifying Paystack payment:", error);
-    return res.status(500).json({ success: false, error: "Payment verification failed" });
+    console.error("[VERIFY] Error verifying payment:", error.message);
+    return res.status(500).json({ 
+      success: false, 
+      error: "Payment verification failed" 
+    });
   }
 });
 
-router.get("/wallet/balance",  async (req, res) => {
+// ✅ Paystack Webhook Handler with security
+router.post("/paystack/webhook", async (req, res) => {
+  try {
+    console.log('[WEBHOOK] Webhook received:', {
+      event: req.body.event,
+      reference: req.body.data?.reference
+    });
+
+    // Verify webhook signature
+    const hash = crypto
+      .createHmac('sha512', PAYSTACK_SECRET_KEY)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
+
+    if (hash !== req.headers['x-paystack-signature']) {
+      console.error('[WEBHOOK] Invalid webhook signature');
+      return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    const event = req.body;
+
+    // Handle successful charge
+    if (event.event === 'charge.success') {
+      const { reference, amount, metadata, customer } = event.data;
+      
+      console.log(`[WEBHOOK] Processing successful charge: ${reference}`);
+
+      const result = await processSuccessfulPayment(reference, amount, metadata, customer);
+      
+      return res.json({ message: result.message });
+    }
+    
+    // Handle failed charge
+    else if (event.event === 'charge.failed') {
+      const { reference } = event.data;
+      
+      await Transaction.findOneAndUpdate(
+        { reference, status: 'pending' },
+        { status: 'failed' }
+      );
+      
+      console.log(`[WEBHOOK] Payment failed: ${reference}`);
+      return res.json({ message: 'Payment failure recorded' });
+    }
+    
+    else {
+      console.log(`[WEBHOOK] Unhandled event type: ${event.event}`);
+      return res.json({ message: 'Event received' });
+    }
+
+  } catch (error) {
+    console.error('[WEBHOOK] Error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get wallet balance
+router.get("/wallet/balance", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.query;
 
     if (!userId) {
-      return res.status(400).json({ success: false, error: "User ID is required" });
+      return res.status(400).json({ 
+        success: false, 
+        error: "User ID is required" 
+      });
     }
 
-    // Find the user and get their wallet balance
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found" 
+      });
     }
 
-    // Return the wallet balance
     return res.json({
       success: true,
       balance: user.walletBalance || 0,
       currency: "GHS"
     });
   } catch (error) {
-    console.error("Error fetching wallet balance:", error);
-    return res.status(500).json({ success: false, error: "Failed to fetch wallet balance" });
+    console.error("[BALANCE] Error fetching wallet balance:", error);
+    return res.status(500).json({ 
+      success: false, 
+      error: "Failed to fetch wallet balance" 
+    });
   }
 });
 
-// Get Wallet Transaction History
-router.get("/wallet/transactions", async (req, res) => {
+// Get transaction history
+router.get("/wallet/transactions", authenticateUser, async (req, res) => {
   try {
-    const userId = req.body.userId;
+    const { userId } = req.query;
     const { page = 1, limit = 10 } = req.query;
     
     if (!userId) {
-      return res.status(400).json({ success: false, error: "User ID is required" });
+      return res.status(400).json({ 
+        success: false, 
+        error: "User ID is required" 
+      });
     }
 
     const transactions = await Transaction.find({ userId })
@@ -610,8 +583,11 @@ router.get("/wallet/transactions", async (req, res) => {
       currentPage: page
     });
   } catch (error) {
-    console.error("Error fetching transaction history:", error);
-    return res.status(500).json({ success: false, error: "Failed to fetch transaction history" });
+    console.error("[TRANSACTIONS] Error fetching transaction history:", error);
+    return res.status(500).json({ 
+      success: false, 
+      error: "Failed to fetch transaction history" 
+    });
   }
 });
 
